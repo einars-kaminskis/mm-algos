@@ -534,28 +534,28 @@ GAME_TYPES = [
 # --------------------------------------------------------------------
 # Interpolation function for continuous scaling across rating ranges.
 # We assume three anchor points:
-#   - at rating 1000: use low anchor,
-#   - at rating 1500: use medium anchor,
-#   - at rating 2000: use high anchor.
-# For ratings below 1000, we extrapolate downward using the same slope as from 1000 to 1500.
-# For ratings = 2000, we use the high anchor.
-# For ratings above 2000, we extrapolate upward using the same slope as from 1500 to 2000.
+#   - at rating 400: use low anchor,
+#   - at rating 1300: use medium anchor,
+#   - at rating 2500: use high anchor.
+# For ratings below 400, we extrapolate downward using the same slope as from 400 to 1300.
+# For ratings = 2500, we use the high anchor.
+# For ratings above 2500, we extrapolate upward using the same slope as from 1300 to 2500.
 def interpolate_stat(low_val, med_val, high_val, true_rating):
-    if true_rating < 1000:
-        slope = (med_val - low_val) / 500.0
-        return low_val - (1000 - true_rating) * slope
-    elif true_rating < 1500:
-        t = (true_rating - 1000) / 500.0
-        return low_val + t * (med_val - low_val)
-    elif true_rating < 2000:
-        t = (true_rating - 1500) / 500.0
-        return med_val + t * (high_val - med_val)
-    elif true_rating == 2000:
+    if true_rating < 400:
+        slope = abs(med_val - low_val) / 500.0
+        return low_val - (400 - true_rating) * slope
+    elif true_rating < 1300:
+        t = (true_rating - 400) / 500.0
+        return low_val + t * abs(med_val - low_val)
+    elif true_rating < 2500:
+        t = (true_rating - 1300) / 500.0
+        return med_val + t * abs(high_val - med_val)
+    elif true_rating == 2500:
         return high_val
-    elif true_rating > 2000:
-        # Extrapolate with same slope as 1500->2000.
-        slope = (high_val - med_val) / 500.0
-        return high_val + (true_rating - 2000) * slope
+    elif true_rating > 2500:
+        # Extrapolate with same slope as 1300->2500.
+        slope = abs(high_val - med_val) / 500.0
+        return high_val + (true_rating - 2500) * slope
 
 def interpolate_stats(low_stats: dict, med_stats: dict, high_stats: dict, true_rating: int) -> dict:
     result = {}
