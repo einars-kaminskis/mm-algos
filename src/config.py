@@ -42,8 +42,8 @@ GAME_TYPES = [
         type = "TDM", # Team deathmatch (from Call of Duty)
         team_size = 6,
         team_count = 2,
-        time_limit_mean = 480, # seconds or 8 minutes
-        time_limit_variance = 60, # seconds or 1 minutes
+        time_limit_mean = 600, # seconds or 10 minutes
+        time_limit_variance = 120, # seconds or 2 minutes
         kill_cap = 50,
         simulated_games_count = 200000,
         vp_weights = [1.00, 0.67, 0.50, 0.33, 0.00, 0.00, 0.33, 0.50, 0.00],
@@ -52,71 +52,71 @@ GAME_TYPES = [
             # Low skill
             "low": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 40, "pgts_sd_total_wins": 15,
-                "pgts_mean_total_loses": 60, "pgts_sd_total_loses": 15,
-                "pgts_mean_total_ties": 5, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 1, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':  50, 'sd_total_games_played': 10,
+                'mean_total_wins':           8, 'sd_total_wins':  3,
+                'mean_total_loses':         40, 'sd_total_loses': 10,
+                'mean_total_ties':           2, 'sd_total_ties':  1,
+                'mean_win_streak':           2, 'sd_win_streak':  1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 8, "sd_kills": 3,
-                "mean_deaths": 12, "sd_deaths": 3,
-                "mean_assists": 2, "sd_assists": 1,
-                "mean_accuracy": 12.0, "sd_accuracy": 4.0,
-                "mean_headshot_accuracy": 300, "sd_headshot_accuracy": 100,
-                "mean_torso_and_arm_accuracy": 350, "sd_torso_and_arm_accuracy": 120,
-                "mean_best_killstreak": 3, "sd_best_killstreak": 1,
+                'mean_kills':    8,  'sd_kills':   3,   # ~8 kills
+                'mean_deaths':  10,  'sd_deaths':   3,
+                'mean_assists': 1.0, 'sd_assists': 0.5, # ~1 assist
+                'mean_accuracy':18.0,'sd_accuracy':5.0, # mid of 20%–25%
+                'mean_headshot_accuracy':6.0, 'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':8.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':3,   'sd_best_killstreak':1,
 
                 # For GamePlayer:
-                "mean_longest_time_alive": 30, "sd_longest_time_alive": 10,
-                "mean_contesting_kills": 1, "sd_contesting_kills": 1,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':  35, 'sd_longest_time_alive': 15,
+                'mean_contesting_kills':0,   'sd_contesting_kills':0,
+                'mean_objective_time':0,     'sd_objective_time':0,
             },
             # Medium skill
             "med": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 50, "pgts_sd_total_wins": 15,
-                "pgts_mean_total_loses": 50, "pgts_sd_total_loses": 15,
-                "pgts_mean_total_ties": 10, "pgts_sd_total_ties": 3,
-                "pgts_mean_win_streak": 3, "pgts_sd_win_streak": 1.5,
+                'mean_total_games_played': 200, 'sd_total_games_played': 50,
+                'mean_total_wins':          80, 'sd_total_wins':        20,
+                'mean_total_loses':        110, 'sd_total_loses':        30,
+                'mean_total_ties':          10, 'sd_total_ties':         5,
+                'mean_win_streak':          5, 'sd_win_streak':         2,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 13, "sd_kills": 4,
-                "mean_deaths": 13, "sd_deaths": 4,
-                "mean_assists": 2, "sd_assists": 1,
-                "mean_accuracy": 18.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 500, "sd_headshot_accuracy": 150,
-                "mean_torso_and_arm_accuracy": 400, "sd_torso_and_arm_accuracy": 120,
-                "mean_best_killstreak": 5, "sd_best_killstreak": 2,
+                'mean_kills':   15, 'sd_kills':  5,   # ~15–18 kills
+                'mean_deaths':  15, 'sd_deaths':  5,
+                'mean_assists': 1.5,'sd_assists': 0.7,
+                'mean_accuracy':25.0,'sd_accuracy':5.0,
+                'mean_headshot_accuracy':8.0,'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':11.0,'sd_torso_and_arm_accuracy':4.5,
+                'mean_best_killstreak':5,  'sd_best_killstreak':2,
 
                 # For GamePlayer:
-                "mean_longest_time_alive": 45, "sd_longest_time_alive": 15,
-                "mean_contesting_kills": 2, "sd_contesting_kills": 1,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':  55, 'sd_longest_time_alive': 20,
+                'mean_contesting_kills':0,   'sd_contesting_kills':0,
+                'mean_objective_time':0,     'sd_objective_time':0,
             },
             # High skill
             "high": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 70, "pgts_sd_total_wins": 15,
-                "pgts_mean_total_loses": 30, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 5, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 6, "pgts_sd_win_streak": 2,
+                'mean_total_games_played':1000,'sd_total_games_played':200,
+                'mean_total_wins':         600, 'sd_total_wins':        100,
+                'mean_total_loses':        350, 'sd_total_loses':         80,
+                'mean_total_ties':          50, 'sd_total_ties':         10,
+                'mean_win_streak':          8, 'sd_win_streak':         3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 22, "sd_kills": 5,
-                "mean_deaths": 8, "sd_deaths": 3,
-                "mean_assists": 1, "sd_assists": 1,
-                "mean_accuracy": 25.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 900, "sd_headshot_accuracy": 200,
-                "mean_torso_and_arm_accuracy": 650, "sd_torso_and_arm_accuracy": 150,
-                "mean_best_killstreak": 8, "sd_best_killstreak": 2,
+                'mean_kills':   25, 'sd_kills':  7,   # ~20–30 kills
+                'mean_deaths':  19, 'sd_deaths':  6,
+                'mean_assists': 2.0,'sd_assists': 1.0,
+                'mean_accuracy':36.0,'sd_accuracy':6.0, # pro ~40 %
+                'mean_headshot_accuracy':15.0,'sd_headshot_accuracy':2.5,
+                'mean_torso_and_arm_accuracy':16.0,'sd_torso_and_arm_accuracy':3.0,
+                'mean_best_killstreak':10,'sd_best_killstreak':3,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 60, "sd_longest_time_alive": 20,
-                "mean_contesting_kills": 3, "sd_contesting_kills": 1,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':  80, 'sd_longest_time_alive': 25,
+                'mean_contesting_kills':0,   'sd_contesting_kills':0,
+                'mean_objective_time':0,     'sd_objective_time':0,
             }
         },
     ),
@@ -124,8 +124,8 @@ GAME_TYPES = [
         type = "FFA", # Free-for-All (from Call of Duty)
         team_size = 1,
         team_count = 12,
-        time_limit_mean = 480, # seconds or 8 minutes
-        time_limit_variance = 60, # seconds or 1 minutes
+        time_limit_mean = 600, # seconds or 10 minutes
+        time_limit_variance = 120, # seconds or 2 minutes
         kill_cap = 50,
         simulated_games_count = 20000,
         vp_weights = [1.00, 0.13, 0.38, 0.38, 0.00, 0.00, 0.25, 0.38, 0.00],
@@ -133,71 +133,71 @@ GAME_TYPES = [
             # Low skill
             "low": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 30, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 70, "pgts_sd_total_loses": 15,
-                "pgts_mean_total_ties": 5, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 0, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':  30, 'sd_total_games_played': 10,
+                'mean_total_wins':           3, 'sd_total_wins':  2,
+                'mean_total_loses':         27, 'sd_total_loses':  8,
+                'mean_total_ties':           0, 'sd_total_ties':   0,
+                'mean_win_streak':           1, 'sd_win_streak':   1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 3, "sd_kills": 2,
-                "mean_deaths": 15, "sd_deaths": 4,
-                "mean_assists": 0, "sd_assists": 0,
-                "mean_accuracy": 12.0, "sd_accuracy": 4.0,
-                "mean_headshot_accuracy": 150, "sd_headshot_accuracy": 50,
-                "mean_torso_and_arm_accuracy": 175, "sd_torso_and_arm_accuracy": 60,
-                "mean_best_killstreak": 2, "sd_best_killstreak": 1,
+                'mean_kills':    5, 'sd_kills':  3,   # ~3–5
+                'mean_deaths':  12, 'sd_deaths':  5,
+                'mean_assists': 0,  'sd_assists': 0,
+                'mean_accuracy':18.0,'sd_accuracy':5.0,
+                'mean_headshot_accuracy':6.0, 'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':8.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':2,  'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 20, "sd_longest_time_alive": 8,
-                "mean_contesting_kills": 0, "sd_contesting_kills": 0,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':  30, 'sd_longest_time_alive': 13,
+                'mean_contesting_kills':0,   'sd_contesting_kills':0,
+                'mean_objective_time':0,     'sd_objective_time':0,
             },
             # Medium skill
             "med": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 50, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 40, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 5, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 2, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':150, 'sd_total_games_played': 40,
+                'mean_total_wins':          50, 'sd_total_wins':        15,
+                'mean_total_loses':         90, 'sd_total_loses':        25,
+                'mean_total_ties':           0, 'sd_total_ties':         0,
+                'mean_win_streak':           5, 'sd_win_streak':         2,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 10, "sd_kills": 4,
-                "mean_deaths": 10, "sd_deaths": 4,
-                "mean_assists": 0, "sd_assists": 0,
-                "mean_accuracy": 18.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 300, "sd_headshot_accuracy": 100,
-                "mean_torso_and_arm_accuracy": 350, "sd_torso_and_arm_accuracy": 120,
-                "mean_best_killstreak": 4, "sd_best_killstreak": 1.5,
+                'mean_kills':   13, 'sd_kills':  4,   # solo med ~10–15
+                'mean_deaths':  13, 'sd_deaths':  4,
+                'mean_assists': 0,  'sd_assists': 0,
+                'mean_accuracy':25.0,'sd_accuracy':5.0,
+                'mean_headshot_accuracy':8.0,'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':11.0,'sd_torso_and_arm_accuracy':4.5,
+                'mean_best_killstreak':4,  'sd_best_killstreak':1.5,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 35, "sd_longest_time_alive": 10,
-                "mean_contesting_kills": 0, "sd_contesting_kills": 0,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':  48, 'sd_longest_time_alive': 17,
+                'mean_contesting_kills':0,   'sd_contesting_kills':0,
+                'mean_objective_time':0,     'sd_objective_time':0,
             },
             # High skill
             "high": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 60, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 30, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 5, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 4, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':800, 'sd_total_games_played':150,
+                'mean_total_wins':         400, 'sd_total_wins':         80,
+                'mean_total_loses':        350, 'sd_total_loses':         70,
+                'mean_total_ties':           0, 'sd_total_ties':         0,
+                'mean_win_streak':          8, 'sd_win_streak':         3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 20, "sd_kills": 5,
-                "mean_deaths": 6, "sd_deaths": 3,
-                "mean_assists": 0, "sd_assists": 0,
-                "mean_accuracy": 25.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 500, "sd_headshot_accuracy": 150,
-                "mean_torso_and_arm_accuracy": 700, "sd_torso_and_arm_accuracy": 150,
-                "mean_best_killstreak": 6, "sd_best_killstreak": 2,
+                'mean_kills':   25, 'sd_kills':  8,   # solo high ~20–30
+                'mean_deaths':  20, 'sd_deaths':  6,
+                'mean_assists': 0,  'sd_assists': 0,
+                'mean_accuracy':36.0,'sd_accuracy':6.0,
+                'mean_headshot_accuracy':15.0,'sd_headshot_accuracy':2.5,
+                'mean_torso_and_arm_accuracy':16.0,'sd_torso_and_arm_accuracy':3.0,
+                'mean_best_killstreak':6,  'sd_best_killstreak':2,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 50, "sd_longest_time_alive": 15,
-                "mean_contesting_kills": 1, "sd_contesting_kills": 1,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':  70, 'sd_longest_time_alive': 22,
+                'mean_contesting_kills':0,   'sd_contesting_kills':0,
+                'mean_objective_time':0,     'sd_objective_time':0,
             }
         },
     ),
@@ -205,8 +205,8 @@ GAME_TYPES = [
         type = "Domination", # Domination (from Call of Duty)
         team_size = 6,
         team_count = 2,
-        time_limit_mean = 498, # seconds or 8,3 minutes
-        time_limit_variance = 55, # seconds
+        time_limit_mean = 1020, # seconds or 17 minutes
+        time_limit_variance = 180, # seconds or 3 minutes
         point_limit = 200, # 1 point per 5 seconds for each of the 3 zones
         simulated_games_count = 200000,
         vp_weights = [0.14, 0.00, 0.00, 0.00, 0.14, 1.00, 0.07, 0.07, 0.00],
@@ -215,71 +215,71 @@ GAME_TYPES = [
             # Low skill
             "low": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 35, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 65, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 5, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 1, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':  60, 'sd_total_games_played': 15,
+                'mean_total_wins':          20, 'sd_total_wins':         8,
+                'mean_total_loses':         40, 'sd_total_loses':        15,
+                'mean_total_ties':           0, 'sd_total_ties':         0,
+                'mean_win_streak':           3, 'sd_win_streak':         1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 8, "sd_kills": 4,
-                "mean_deaths": 15, "sd_deaths": 5,
-                "mean_assists": 2, "sd_assists": 2,
-                "mean_accuracy": 12.0, "sd_accuracy": 4.0,
-                "mean_headshot_accuracy": 300, "sd_headshot_accuracy": 100,
-                "mean_torso_and_arm_accuracy": 350, "sd_torso_and_arm_accuracy": 120,
-                "mean_best_killstreak": 3, "sd_best_killstreak": 1,
+                'mean_kills':    8,  'sd_kills':   4,   # Dom ≈ TDM low
+                'mean_deaths':  15,  'sd_deaths':   5,
+                'mean_assists': 2,   'sd_assists':   1.5,
+                'mean_accuracy':15.0,'sd_accuracy':6.0,
+                'mean_headshot_accuracy':5.0, 'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':7.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':3,   'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 30, "sd_longest_time_alive": 10,
-                "mean_contesting_kills": 1, "sd_contesting_kills": 1,
-                "mean_objective_time": 30, "sd_objective_time": 20,
+                'mean_longest_time_alive': 70, 'sd_longest_time_alive': 30,
+                'mean_contesting_kills':1,   'sd_contesting_kills':1,   # objective fights
+                'mean_objective_time':       140, 'sd_objective_time':  40,
             },
             # Medium skill
             "med": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 45, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 55, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 6, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 3, "pgts_sd_win_streak": 1.5,
+                'mean_total_games_played':250, 'sd_total_games_played': 60,
+                'mean_total_wins':         120, 'sd_total_wins':        30,
+                'mean_total_loses':        130, 'sd_total_loses':        35,
+                'mean_total_ties':           0, 'sd_total_ties':         0,
+                'mean_win_streak':           6, 'sd_win_streak':         2,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 20, "sd_kills": 6,
-                "mean_deaths": 15, "sd_deaths": 5,
-                "mean_assists": 3, "sd_assists": 2,
-                "mean_accuracy": 18.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 400, "sd_headshot_accuracy": 120,
-                "mean_torso_and_arm_accuracy": 400, "sd_torso_and_arm_accuracy": 120,
-                "mean_best_killstreak": 4, "sd_best_killstreak": 1.5,
+                'mean_kills':   20,  'sd_kills':   6,
+                'mean_deaths':  15,  'sd_deaths':   5,
+                'mean_assists': 3,   'sd_assists':   2,
+                'mean_accuracy':23.0,'sd_accuracy':4.0,
+                'mean_headshot_accuracy':7.0,'sd_headshot_accuracy':2.0,
+                'mean_torso_and_arm_accuracy':11.0,'sd_torso_and_arm_accuracy':3.5,
+                'mean_best_killstreak':5,   'sd_best_killstreak':2,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 45, "sd_longest_time_alive": 15,
-                "mean_contesting_kills": 2, "sd_contesting_kills": 1,
-                "mean_objective_time": 60, "sd_objective_time": 30,
+                'mean_longest_time_alive': 90, 'sd_longest_time_alive': 35,
+                'mean_contesting_kills':3,   'sd_contesting_kills':1,
+                'mean_objective_time':       210, 'sd_objective_time': 50,
             },
             # High skill
             "high": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 55, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 40, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 4, "pgts_sd_total_ties": 1,
-                "pgts_mean_win_streak": 5, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':1200,'sd_total_games_played':250,
+                'mean_total_wins':         700, 'sd_total_wins':        120,
+                'mean_total_loses':        500, 'sd_total_loses':        100,
+                'mean_total_ties':           0, 'sd_total_ties':         0,
+                'mean_win_streak':           8, 'sd_win_streak':         3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 35, "sd_kills": 10,
-                "mean_deaths": 10, "sd_deaths": 4,
-                "mean_assists": 4, "sd_assists": 3,
-                "mean_accuracy": 25.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 800, "sd_headshot_accuracy": 200,
-                "mean_torso_and_arm_accuracy": 600, "sd_torso_and_arm_accuracy": 150,
-                "mean_best_killstreak": 6, "sd_best_killstreak": 1,
+                'mean_kills':   35,  'sd_kills':  10,
+                'mean_deaths':  10,  'sd_deaths':   4,
+                'mean_assists': 4,   'sd_assists':   3,
+                'mean_accuracy':33.0,'sd_accuracy':4.0,
+                'mean_headshot_accuracy':14.0,'sd_headshot_accuracy':2.0,
+                'mean_torso_and_arm_accuracy':14.5,'sd_torso_and_arm_accuracy':3.0,
+                'mean_best_killstreak':8,   'sd_best_killstreak':3,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 60, "sd_longest_time_alive": 20,
-                "mean_contesting_kills": 3, "sd_contesting_kills": 1,
-                "mean_objective_time": 90, "sd_objective_time": 30,
+                'mean_longest_time_alive': 100, 'sd_longest_time_alive': 45,
+                'mean_contesting_kills':5,   'sd_contesting_kills':2,
+                'mean_objective_time':       320, 'sd_objective_time': 60,
             }
         },
     ),
@@ -287,8 +287,8 @@ GAME_TYPES = [
         type = "BR_1V99", # Battle royale 1v99 (from Fortnite)
         team_size = 1,
         team_count = 100,
-        time_limit_mean = 1320, # seconds or 22 minutes
-        time_limit_variance = 160, # seconds or 2,67 minutes
+        time_limit_mean = 1200, # seconds or 20 minutes
+        time_limit_variance = 180, # seconds or 3 minutes
         kill_cap = 99,
         simulated_games_count = 20000,
         vp_weights = [0.63, 0.25, 0.13, 1.00, 0.00, 0.00, 0.13, 0.38, 0.00],
@@ -296,71 +296,71 @@ GAME_TYPES = [
             # Low skill
             "low": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 20, "pgts_sd_total_wins": 8,
-                "pgts_mean_total_loses": 80, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 0, "pgts_sd_total_ties": 0,
-                "pgts_mean_win_streak": 0, "pgts_sd_win_streak": 0,
+                'mean_total_games_played':  20, 'sd_total_games_played':  5,
+                'mean_total_wins':           1, 'sd_total_wins':          1,
+                'mean_total_loses':         19, 'sd_total_loses':          5,
+                'mean_total_ties':           0, 'sd_total_ties':          0,
+                'mean_win_streak':           1, 'sd_win_streak':          1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 1, "sd_kills": 1,
-                "mean_deaths": 1, "sd_deaths": 0,
-                "mean_assists": 0, "sd_assists": 0,
-                "mean_accuracy": 10.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 50, "sd_headshot_accuracy": 20,
-                "mean_torso_and_arm_accuracy": 70, "sd_torso_and_arm_accuracy": 30,
-                "mean_best_killstreak": 1, "sd_best_killstreak": 0.5,
+                'mean_kills':    1,  'sd_kills':   1,
+                'mean_deaths':   1,  'sd_deaths':   1,
+                'mean_assists':  0,  'sd_assists':  0,
+                'mean_accuracy':10.0,'sd_accuracy':6.0,
+                'mean_headshot_accuracy':1.0, 'sd_headshot_accuracy':1.0,
+                'mean_torso_and_arm_accuracy':5.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':1,  'sd_best_killstreak':0.5,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 20, "sd_longest_time_alive": 8,
-                "mean_contesting_kills": 0, "sd_contesting_kills": 0,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':200,'sd_longest_time_alive': 160,
+                'mean_contesting_kills':0, 'sd_contesting_kills':0,
+                'mean_objective_time': 0, 'sd_objective_time':0,
             },
             # Medium skill
             "med": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 30, "pgts_sd_total_wins": 8,
-                "pgts_mean_total_loses": 70, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 0, "pgts_sd_total_ties": 0,
-                "pgts_mean_win_streak": 1, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':100, 'sd_total_games_played': 20,
+                'mean_total_wins':           8, 'sd_total_wins':          3,
+                'mean_total_loses':         92, 'sd_total_loses':         20,
+                'mean_total_ties':           0, 'sd_total_ties':          0,
+                'mean_win_streak':           3, 'sd_win_streak':          1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 3, "sd_kills": 2,
-                "mean_deaths": 1, "sd_deaths": 0,
-                "mean_assists": 0, "sd_assists": 0,
-                "mean_accuracy": 15.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 150, "sd_headshot_accuracy": 50,
-                "mean_torso_and_arm_accuracy": 200, "sd_torso_and_arm_accuracy": 60,
-                "mean_best_killstreak": 2, "sd_best_killstreak": 1,
+                'mean_kills':    3,  'sd_kills':   2,  # med ~3–5 kills
+                'mean_deaths':   1,  'sd_deaths':   1,
+                'mean_assists':  0,  'sd_assists':  0,
+                'mean_accuracy':15.0,'sd_accuracy':5.0,
+                'mean_headshot_accuracy':4.0, 'sd_headshot_accuracy':2.0,
+                'mean_torso_and_arm_accuracy':7.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':2,  'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 30, "sd_longest_time_alive": 8,
-                "mean_contesting_kills": 0, "sd_contesting_kills": 0,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':600,'sd_longest_time_alive':250,
+                'mean_contesting_kills':0, 'sd_contesting_kills':0,
+                'mean_objective_time': 0, 'sd_objective_time':0,
             },
             # High skill
             "high": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 20, "pgts_sd_total_wins": 8,
-                "pgts_mean_total_loses": 80, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 0, "pgts_sd_total_ties": 0,
-                "pgts_mean_win_streak": 1, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':500,'sd_total_games_played':100,
+                'mean_total_wins':          50, 'sd_total_wins':         10,
+                'mean_total_loses':        450, 'sd_total_loses':        90,
+                'mean_total_ties':           0, 'sd_total_ties':          0,
+                'mean_win_streak':           8, 'sd_win_streak':          3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 8, "sd_kills": 4,
-                "mean_deaths": 1, "sd_deaths": 0,
-                "mean_assists": 0, "sd_assists": 0,
-                "mean_accuracy": 25.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 300, "sd_headshot_accuracy": 80,
-                "mean_torso_and_arm_accuracy": 400, "sd_torso_and_arm_accuracy": 100,
-                "mean_best_killstreak": 3, "sd_best_killstreak": 1,
+                'mean_kills':    8,  'sd_kills':   3,  # high elite ~8–10
+                'mean_deaths':   1,  'sd_deaths':   0,
+                'mean_assists':  0,  'sd_assists':  0,
+                'mean_accuracy':25.0,'sd_accuracy':7.0,
+                'mean_headshot_accuracy':7.0,'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':10.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':3,  'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 30, "sd_longest_time_alive": 10,
-                "mean_contesting_kills": 0, "sd_contesting_kills": 0,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':1200,'sd_longest_time_alive':100,
+                'mean_contesting_kills':0,  'sd_contesting_kills':0,
+                'mean_objective_time': 0,  'sd_objective_time':0,
             }
         },
     ),
@@ -368,8 +368,8 @@ GAME_TYPES = [
         type = "BR_4V96", # Battle royale 4v96 (from Fortnite)
         team_size = 4,
         team_count = 25,
-        time_limit_mean = 1620, # seconds or 27 minutes
-        time_limit_variance = 180, # seconds or 3 minutes
+        time_limit_mean = 1380, # seconds or 23 minutes
+        time_limit_variance = 240, # seconds or 4 minutes
         kill_cap = 96,
         simulated_games_count = 140000,
         vp_weights = [0.57, 0.57, 0.00, 1.00, 0.00, 0.00, 0.29, 0.43, 0.00],
@@ -378,71 +378,71 @@ GAME_TYPES = [
             # Low skill
             "low": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 25, "pgts_sd_total_wins": 8,
-                "pgts_mean_total_loses": 75, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 3, "pgts_sd_total_ties": 1,
-                "pgts_mean_win_streak": 1, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':  50, 'sd_total_games_played': 15,
+                'mean_total_wins':           5, 'sd_total_wins':          3,
+                'mean_total_loses':         45, 'sd_total_loses':         15,
+                'mean_total_ties':           0, 'sd_total_ties':          0,
+                'mean_win_streak':           2, 'sd_win_streak':          1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 1, "sd_kills": 1,
-                "mean_deaths": 1, "sd_deaths": 0,
-                "mean_assists": 2, "sd_assists": 2,
-                "mean_accuracy": 10.0, "sd_accuracy": 4.0,
-                "mean_headshot_accuracy": 90, "sd_headshot_accuracy": 30,
-                "mean_torso_and_arm_accuracy": 105, "sd_torso_and_arm_accuracy": 40,
-                "mean_best_killstreak": 2, "sd_best_killstreak": 1,
+                'mean_kills':    1, 'sd_kills':  1,
+                'mean_deaths':   1, 'sd_deaths':  1,
+                'mean_assists':  1, 'sd_assists':  1,
+                'mean_accuracy':10.0,'sd_accuracy':6.0,
+                'mean_headshot_accuracy':1.0, 'sd_headshot_accuracy':1.0,
+                'mean_torso_and_arm_accuracy':5.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':2, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 200, "sd_longest_time_alive": 80,
-                "mean_contesting_kills": 0, "sd_contesting_kills": 0,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':250,'sd_longest_time_alive':150,
+                'mean_contesting_kills':0, 'sd_contesting_kills':0,
+                'mean_objective_time': 0,  'sd_objective_time':0,
             },
             # Medium skill
             "med": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 40, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 60, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 4, "pgts_sd_total_ties": 1,
-                "pgts_mean_win_streak": 2, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':200, 'sd_total_games_played': 50,
+                'mean_total_wins':          50, 'sd_total_wins':         10,
+                'mean_total_loses':        150, 'sd_total_loses':         40,
+                'mean_total_ties':           0, 'sd_total_ties':          0,
+                'mean_win_streak':           5, 'sd_win_streak':          2,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 3, "sd_kills": 2,
-                "mean_deaths": 1, "sd_deaths": 0,
-                "mean_assists": 2, "sd_assists": 2,
-                "mean_accuracy": 15.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 210, "sd_headshot_accuracy": 70,
-                "mean_torso_and_arm_accuracy": 245, "sd_torso_and_arm_accuracy": 80,
-                "mean_best_killstreak": 3, "sd_best_killstreak": 1,
+                'mean_kills':    3, 'sd_kills':  2,
+                'mean_deaths':   1, 'sd_deaths':  1,
+                'mean_assists':  2, 'sd_assists':  1,
+                'mean_accuracy':15.0,'sd_accuracy':5.0,
+                'mean_headshot_accuracy':4.0, 'sd_headshot_accuracy':2.0,
+                'mean_torso_and_arm_accuracy':7.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':3, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 360, "sd_longest_time_alive": 120,
-                "mean_contesting_kills": 1, "sd_contesting_kills": 1,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':650,'sd_longest_time_alive':250,
+                'mean_contesting_kills':0, 'sd_contesting_kills':0,
+                'mean_objective_time': 0,  'sd_objective_time':0,
             },
             # High skill
             "high": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 50, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 40, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 4, "pgts_sd_total_ties": 1,
-                "pgts_mean_win_streak": 3, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':800,'sd_total_games_played':150,
+                'mean_total_wins':         400,'sd_total_wins':         80,
+                'mean_total_loses':        350,'sd_total_loses':         70,
+                'mean_total_ties':           0,'sd_total_ties':          0,
+                'mean_win_streak':           8,'sd_win_streak':          3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 6, "sd_kills": 3,
-                "mean_deaths": 1, "sd_deaths": 0,
-                "mean_assists": 1, "sd_assists": 1,
-                "mean_accuracy": 22.0, "sd_accuracy": 6.0,
-                "mean_headshot_accuracy": 390, "sd_headshot_accuracy": 120,
-                "mean_torso_and_arm_accuracy": 455, "sd_torso_and_arm_accuracy": 130,
-                "mean_best_killstreak": 4, "sd_best_killstreak": 1,
+                'mean_kills':    6, 'sd_kills':  3,  # high squads ~6–8 kills
+                'mean_deaths':   1, 'sd_deaths':  1,
+                'mean_assists':  4, 'sd_assists':  2,
+                'mean_accuracy':25.0,'sd_accuracy':7.0,
+                'mean_headshot_accuracy':7.0,'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':10.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':4, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 720, "sd_longest_time_alive": 180,
-                "mean_contesting_kills": 0, "sd_contesting_kills": 0,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':1200,'sd_longest_time_alive':100,
+                'mean_contesting_kills':0, 'sd_contesting_kills':0,
+                'mean_objective_time': 0,  'sd_objective_time':0,
             }
         },
     ),
@@ -461,71 +461,71 @@ GAME_TYPES = [
             # Low skill
             "low": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 30, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 70, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 5, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 1, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':  80, 'sd_total_games_played': 20,
+                'mean_total_wins':          20, 'sd_total_wins':          8,
+                'mean_total_loses':         60, 'sd_total_loses':        15,
+                'mean_total_ties':           0, 'sd_total_ties':          0,
+                'mean_win_streak':           3, 'sd_win_streak':          1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 8, "sd_kills": 3,
-                "mean_deaths": 16, "sd_deaths": 4,
-                "mean_assists": 3, "sd_assists": 2,
-                "mean_accuracy": 12.0, "sd_accuracy": 4.0,
-                "mean_headshot_accuracy": 240, "sd_headshot_accuracy": 80,
-                "mean_torso_and_arm_accuracy": 280, "sd_torso_and_arm_accuracy": 90,
-                "mean_best_killstreak": 3, "sd_best_killstreak": 1,
+                'mean_kills':    8, 'sd_kills':  3,   # avg ~8–10 kills
+                'mean_deaths':  16, 'sd_deaths':  4,
+                'mean_assists': 3,  'sd_assists':  2,
+                'mean_accuracy':12.0,'sd_accuracy':7.0,
+                'mean_headshot_accuracy':3.0,'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':6.0,'sd_torso_and_arm_accuracy':5.0,
+                'mean_best_killstreak':3, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 25, "sd_longest_time_alive": 8,
-                "mean_contesting_kills": 1, "sd_contesting_kills": 1,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':  40, 'sd_longest_time_alive': 40,
+                'mean_contesting_kills':1,  'sd_contesting_kills':1,
+                'mean_objective_time':  0,  'sd_objective_time':0,
             },
             # Medium skill
             "med": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 40, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 50, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 6, "pgts_sd_total_ties": 2,
-                "pgts_mean_win_streak": 3, "pgts_sd_win_streak": 1.5,
+                'mean_total_games_played':300,'sd_total_games_played': 75,
+                'mean_total_wins':         120, 'sd_total_wins':        30,
+                'mean_total_loses':        180, 'sd_total_loses':        45,
+                'mean_total_ties':           0, 'sd_total_ties':          0,
+                'mean_win_streak':           6, 'sd_win_streak':          2,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 15, "sd_kills": 4,
-                "mean_deaths": 15, "sd_deaths": 4,
-                "mean_assists": 2, "sd_assists": 2,
-                "mean_accuracy": 18.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 450, "sd_headshot_accuracy": 120,
-                "mean_torso_and_arm_accuracy": 525, "sd_torso_and_arm_accuracy": 130,
-                "mean_best_killstreak": 4, "sd_best_killstreak": 1.5,
+                'mean_kills':   18, 'sd_kills': 4,   # avg ~15–18 kills
+                'mean_deaths':  15, 'sd_deaths': 4,
+                'mean_assists': 2,  'sd_assists': 2,
+                'mean_accuracy':30.0,'sd_accuracy':5.0,
+                'mean_headshot_accuracy':13.0,'sd_headshot_accuracy':3.0,
+                'mean_torso_and_arm_accuracy':11.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_best_killstreak':4, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 35, "sd_longest_time_alive": 10,
-                "mean_contesting_kills": 1, "sd_contesting_kills": 1,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':  95, 'sd_longest_time_alive': 20,
+                'mean_contesting_kills':1, 'sd_contesting_kills':1,
+                'mean_objective_time':  0, 'sd_objective_time':0,
             },
             # High skill
             "high": {
                 # For PlayerGameTypeStats:
-                "pgts_mean_total_games_played": 100, "pgts_sd_total_games_played": 20,
-                "pgts_mean_total_wins": 45, "pgts_sd_total_wins": 10,
-                "pgts_mean_total_loses": 40, "pgts_sd_total_loses": 10,
-                "pgts_mean_total_ties": 4, "pgts_sd_total_ties": 1,
-                "pgts_mean_win_streak": 4, "pgts_sd_win_streak": 1,
+                'mean_total_games_played':     800,  'sd_total_games_played':     150,
+                'mean_total_wins':             500,  'sd_total_wins':             100,
+                'mean_total_loses':            300,  'sd_total_loses':            75,
+                'mean_total_ties':             0,    'sd_total_ties':             0,
+                'mean_win_streak':             8,    'sd_win_streak':             3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                "mean_kills": 25, "sd_kills": 5,
-                "mean_deaths": 10, "sd_deaths": 3,
-                "mean_assists": 1, "sd_assists": 1,
-                "mean_accuracy": 20.0, "sd_accuracy": 5.0,
-                "mean_headshot_accuracy": 625, "sd_headshot_accuracy": 150,
-                "mean_torso_and_arm_accuracy": 750, "sd_torso_and_arm_accuracy": 150,
-                "mean_best_killstreak": 5, "sd_best_killstreak": 1,
+                'mean_kills':                  25,   'sd_kills':                  5, # elite ~25+ kills
+                'mean_deaths':                 10,   'sd_deaths':                 3,
+                'mean_assists':                1,    'sd_assists':                1,
+                'mean_accuracy':               50.0, 'sd_accuracy':               4.0,
+                'mean_headshot_accuracy':      30.0, 'sd_headshot_accuracy':      3.0,
+                'mean_torso_and_arm_accuracy': 15.0, 'sd_torso_and_arm_accuracy': 2.0,
+                'mean_best_killstreak':        5,    'sd_best_killstreak':        1,
                 
                 # For GamePlayer:
-                "mean_longest_time_alive": 40, "sd_longest_time_alive": 15,
-                "mean_contesting_kills": 1, "sd_contesting_kills": 1,
-                "mean_objective_time": 0, "sd_objective_time": 0,
+                'mean_longest_time_alive':     115,  'sd_longest_time_alive':     5,
+                'mean_contesting_kills':       1,    'sd_contesting_kills':       1,
+                'mean_objective_time':         0,    'sd_objective_time':         0,
             }
         },
     ),
