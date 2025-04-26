@@ -1,9 +1,8 @@
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, ForeignKey, Boolean
 )
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
-from config import GLOBAL_START_TIME
+from sqlalchemy.orm import relationship, declarative_base
+from ..config import GLOBAL_START_TIME
 
 Base = declarative_base()
 
@@ -138,7 +137,7 @@ class GamePlayer(Base):
     avg_kills_delta = Column(Float, default=0.0)
     avg_deaths_delta = Column(Float, default=0.0)
     avg_assists_delta = Column(Float, default=0.0)
-    best_killstreak = Column(Integer, default=0)
+    killstreak = Column(Integer, default=0)
     rounds_won = Column(Integer, default=0)
     rounds_lost = Column(Integer, default=0)
     

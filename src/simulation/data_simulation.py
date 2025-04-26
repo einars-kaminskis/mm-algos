@@ -4,9 +4,9 @@ import datetime
 from typing import Dict, Any, List, Tuple
 
 from sqlalchemy import asc, func, or_
-from src.database.db_setup import engine, SessionLocal
-from models import Base, Game, GamePlayer, Player, PlayerGameTypeStats
-from config import (
+from ..database.db_setup import engine, SessionLocal
+from ..database.models import Base, Game, GamePlayer, Player, PlayerGameTypeStats
+from ..config import (
     GameMode,
     GAME_GAP,
     GAME_TYPES,
@@ -48,11 +48,11 @@ def compute_basic_stats(game_type: GameMode, player_stats: PlayerGameTypeStats, 
     assists = int(random.gauss(rank_avg_stats["mean_assists"], rank_avg_stats["sd_assists"]))
     damage_dealt = sum(int(random.gauss(100, 5)) for i in range(kills)) + sum(int(random.gauss(35, 34)) for i in range(assists))
     damage_taken = sum(int(random.gauss(100, 5)) for i in range(deaths))
-    best_killstreak = 0
+    killstreak = 0
     if game_type.type in ['BR_1V99', 'BR_4V96']:
-        best_killstreak = kills
+        killstreak = kills
     else:
-        best_killstreak = min(kills, int(random.gauss(rank_avg_stats["mean_best_killstreak"], rank_avg_stats["sd_best_killstreak"])))
+        killstreak = min(kills, int(random.gauss(rank_avg_stats["mean_best_killstreak"], rank_avg_stats["sd_best_killstreak"])))
 
     accuracy = random.gauss((rank_avg_stats["mean_accuracy"]), (rank_avg_stats["sd_accuracy"])) / 100
     headshot_accuracy = min(random.gauss(rank_avg_stats["mean_headshot_accuracy"], rank_avg_stats["sd_headshot_accuracy"]) / 100, accuracy)
@@ -87,11 +87,11 @@ def compute_basic_stats(game_type: GameMode, player_stats: PlayerGameTypeStats, 
 
     longest_time_alive = 0
     if game_type.type in ['BR_1V99', 'BR_4V96']:
-        longest_time_alive = random.randrange((rank_avg_stats["mean_longest_time_alive"] - rank_avg_stats["sd_longest_time_alive"], playtime + 1, 1))
+        longest_time_alive = random.randrange(rank_avg_stats["mean_longest_time_alive"] - rank_avg_stats["sd_longest_time_alive"], playtime + 1, 1)
     elif game_type.type == 'SAD':
-        longest_time_alive = random.randrange((rank_avg_stats["mean_longest_time_alive"] - rank_avg_stats["sd_longest_time_alive"], int(playtime / 30) + 101, 1))
+        longest_time_alive = random.randrange(rank_avg_stats["mean_longest_time_alive"] - rank_avg_stats["sd_longest_time_alive"], int(playtime / 30) + 101, 1)
     else:
-      int(random.gauss(rank_avg_stats["mean_longest_time_alive"], rank_avg_stats["sd_longest_time_alive"]))
+        longest_time_alive = int(random.gauss(rank_avg_stats["mean_longest_time_alive"], rank_avg_stats["sd_longest_time_alive"]))
 
     return {
         "kills": kills,
@@ -99,7 +99,7 @@ def compute_basic_stats(game_type: GameMode, player_stats: PlayerGameTypeStats, 
         "assists": assists,
         "damage_dealt": damage_dealt,
         "damage_taken": damage_taken,
-        "best_killstreak": best_killstreak,
+        "killstreak": killstreak,
 
         "headshot_damage_dealt": headshot_damage_dealt,
         "torso_and_arm_damage_dealt": torso_and_arm_damage_dealt,
@@ -237,18 +237,18 @@ def update_player_stats(player_stats: PlayerGameTypeStats, game_player: GamePlay
         player_stats.avg_assists = player_stats.total_assists / player_stats.total_games_played
         player_stats.total_kill_death_ratio = player_stats.total_kills / player_stats.total_deaths if player_stats.total_deaths else 0
 
-    player_stats.best_killstreak = max(player_stats.best_killstreak, game_player.best_killstreak)
+    player_stats.best_killstreak = max(player_stats.best_killstreak, game_player.killstreak)
 
 
 """
 Compute initial stats for a player based on their rank and skill multiplier.
 """
-def compute_stats(game_type: GameMode, true_rating: int, rank_avg_stats: dict,) -> Dict[str, Any]:
+def compute_stats(true_rating: int, rank_avg_stats: dict,) -> Dict[str, Any]:
     total_games_played = int(random.gauss(rank_avg_stats["mean_total_games_played"], rank_avg_stats["sd_total_games_played"]))
     total_wins = int(random.gauss(rank_avg_stats["mean_total_wins"], rank_avg_stats["sd_total_wins"]))
-    total_ties = int(random.gauss(rank_avg_stats["mean_total_ties"], rank_avg_stats["mean_total_ties"]))
+    total_ties = int(random.gauss(rank_avg_stats["mean_total_ties"], rank_avg_stats["sd_total_ties"]))
     total_loses = total_games_played - total_wins - total_ties
-    win_streak = int(random.gauss(rank_avg_stats["mean_win_streak"], rank_avg_stats["mean_win_streak"]))
+    win_streak = int(random.gauss(rank_avg_stats["mean_win_streak"], rank_avg_stats["sd_win_streak"]))
    
     total_kills = sum(int(random.gauss(rank_avg_stats["mean_kills"], rank_avg_stats["sd_kills"])) for i in range(total_games_played))
     total_deaths = sum(int(random.gauss(rank_avg_stats["mean_deaths"], rank_avg_stats["sd_deaths"])) for i in range(total_games_played))
@@ -272,7 +272,7 @@ def compute_stats(game_type: GameMode, true_rating: int, rank_avg_stats: dict,) 
 
     total_accuracy = sum(random.gauss((rank_avg_stats["mean_accuracy"]), (rank_avg_stats["sd_accuracy"])) for i in range(total_games_played)) / (total_games_played * 100)
     headshot_accuracy = sum(random.gauss(rank_avg_stats["mean_headshot_accuracy"], rank_avg_stats["sd_headshot_accuracy"]) for i in range(total_games_played)) / (total_games_played * 100)
-    torso_accuracy = sum(random.gauss(rank_avg_stats["mean_torso_and_arm_accuracy"], rank_avg_stats["mean_torso_and_arm_accuracy"]) for i in range(total_games_played)) / (total_games_played * 100)
+    torso_accuracy = sum(random.gauss(rank_avg_stats["mean_torso_and_arm_accuracy"], rank_avg_stats["sd_torso_and_arm_accuracy"]) for i in range(total_games_played)) / (total_games_played * 100)
     
     total_damage_missed = int(total_damage_dealt / total_accuracy - total_damage_dealt)
     leg_accuracy = total_accuracy - headshot_accuracy - torso_accuracy
@@ -350,8 +350,8 @@ def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[i
         else:
             interval_index = random.choices(range(len(rank_weights)), weights=rank_weights)[0]
             true_rating = random.randint(interval_index * 100, interval_index * 100 + 99)
-            player_stats = get_stat_parameters(game_type, player.true_rating)
-            computed_stats = compute_stats(game_type, true_rating, player_stats)
+            player_stats = get_stat_parameters(game_type, true_rating)
+            computed_stats = compute_stats(true_rating, player_stats)
 
             stats = PlayerGameTypeStats(
                 player_id=player.id,
@@ -386,12 +386,12 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
             prev_player_party_name = player_obj.party_name
         
         if player_obj.party_name != f"Party_{player_id}":
-            if player_obj.party_name.contains("half"):
+            if "half" in player_obj.party_name:
                 for next_player_id in range(player_id + 1, player_id + game_type.group_sizes[0]):
                     player_party.append(session.query(Player).filter_by(id=next_player_id).first())
                     player_party_ids.append(next_player_id)
             else:
-                for i in range(player_id + 1, player_id + game_type.group_sizes[1]):
+                for next_player_id in range(player_id + 1, player_id + game_type.group_sizes[1]):
                     player_party.append(session.query(Player).filter_by(id=next_player_id).first())
                     player_party_ids.append(next_player_id)
 
@@ -412,7 +412,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                                                           player_stats.true_rating + 400),
                 PlayerGameTypeStats.game_type == game_type.type,
                 PlayerGameTypeStats.player_id.notin_(ref_players_ids),
-                or_(PlayerGameTypeStats.last_time_played is None, PlayerGameTypeStats.last_time_played <= current_time),
+                or_(PlayerGameTypeStats.last_time_played == None, PlayerGameTypeStats.last_time_played <= current_time),
             ).order_by(
                 asc(func.abs(PlayerGameTypeStats.true_rating - player_stats.true_rating))
             ).limit(player_count - len(player_party)).all()
@@ -433,7 +433,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
             session.add(game)
             session.commit()
 
-            for idx, ref_player in enumerate(party_players_stats):
+            for ref_player in party_players_stats:
                 ref_stats = get_stat_parameters(game_type, ref_player.true_rating)
                 ref_stats_calculated = compute_basic_stats(game_type, ref_player, ref_stats, playtime)
 
@@ -480,7 +480,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
 
                 time_alive_koeficient = playtime / longest_alive_player.longest_time_alive
 
-                for idx, player in game_players_to_insert:
+                for player in game_players_to_insert:
                     player.longest_time_alive = int(player.longest_time_alive * time_alive_koeficient)
                     player.kills = int(player.kills * all_kill_koeficient)
                     player.deaths = int(player.deaths * all_deaths_koeficient)
@@ -532,7 +532,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
 
                 kills_koeficient = game_kill_cap / most_kills_player.kills
 
-                for idx, player in game_players_to_insert:
+                for player in game_players_to_insert:
                     player.kills = int(player.kills * kills_koeficient)
                     player.damage_dealt = int(player.damage_dealt * kills_koeficient)
                     player.assists = int(player.assists * kills_koeficient)
@@ -547,7 +547,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     player.deaths = int(player.deaths * player_deaths_koeficient)
                     player.damage_taken = int(player.damage_taken * player_deaths_koeficient)
                     if playtime / player.deaths < player.longest_time_alive * kills_koeficient:
-                        player.longest_time_alive = random.randrange(int(playtime / player.death), int(player.longest_time_alive * kills_koeficient) + 1, 1)
+                        player.longest_time_alive = random.randrange(int(playtime / player.deaths), int(player.longest_time_alive * kills_koeficient) + 1, 1)
                     else:
                         player.longest_time_alive = int(player.longest_time_alive * kills_koeficient)
 
@@ -556,7 +556,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                 placement = 2
                 first_place_count = 0
 
-                for idx, player in enumerate(sorted_players):
+                for player in sorted_players:
                     if player.kills == game_kill_cap:
                         player.team_placement = 1
                         first_place_count += 1
@@ -564,7 +564,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                         player.team_placement = placement
                         placement += 1
 
-                for idx, player in enumerate(sorted_players):
+                for player in sorted_players:
                     if first_place_count > 1 and player.kills == game_kill_cap:
                         player.is_tie = True
                     else:
@@ -586,7 +586,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                         kills_koeficient = game_type.kill_cap / team2_kills
                         winning_team = "Team_2"
 
-                    for idx, player in enumerate(game_players_to_insert):
+                    for player in game_players_to_insert:
                         player.kills = int(player.kills * kills_koeficient)
                         player.damage_dealt = int(player.damage_dealt * kills_koeficient)
                         player.assists = int(player.assists * kills_koeficient)
@@ -597,8 +597,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     team1_weight_sum = sum(team1_death_weights)
                     team1_players = [player for player in game_players_to_insert if player.team == 'Team_1']
 
-                    for player, weight in zip(team1_players, team1_weight_sum):
-                        player_deaths_koeficient = (team1_new_kills * weight / weight_sum) / player.deaths
+                    for player, weight in zip(team1_players, team1_death_weights):
+                        player_deaths_koeficient = (team1_new_kills * weight / team1_weight_sum) / player.deaths
                         player.deaths = int(player.deaths * player_deaths_koeficient)
                         player.damage_taken = int(player.damage_taken * player_deaths_koeficient)
 
@@ -607,16 +607,16 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     team2_weight_sum = sum(team2_death_weights)
                     team2_players = [player for player in game_players_to_insert if player.team == 'Team_2']
                         
-                    for player, weight in zip(team2_players, team2_weight_sum):
-                        player_deaths_koeficient = (team2_new_kills * weight / weight_sum) / player.deaths
+                    for player, weight in zip(team2_players, team2_death_weights):
+                        player_deaths_koeficient = (team2_new_kills * weight / team2_weight_sum) / player.deaths
                         player.deaths = int(player.deaths * player_deaths_koeficient)
                         player.damage_taken = int(player.damage_taken * player_deaths_koeficient)
                         if playtime / player.deaths < player.longest_time_alive * kills_koeficient:
-                            player.longest_time_alive = random.randrange(int(playtime / player.death), int(player.longest_time_alive * kills_koeficient) + 1, 1)
+                            player.longest_time_alive = random.randrange(int(playtime / player.deaths), int(player.longest_time_alive * kills_koeficient) + 1, 1)
                         else:
                             player.longest_time_alive = int(player.longest_time_alive * kills_koeficient)
                     
-                    for idx, player in enumerate(game_players_to_insert):
+                    for player in game_players_to_insert:
                         if winning_team == 'Tie':
                             player.team_placement = 1
                             player.is_tie = True
@@ -627,14 +627,14 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                             player.team_placement = 2
                             player.is_tie = False
                     
-                if game_type == 'Domination':
+                if game_type.type == 'Domination':
                     """
                     Šo pēc tam atrisināt, lai visi kill_caps ir vienā vietā
                     """
                     kill_cap = random.randrange(90, 135 + 1, 1)
                     kills_koeficient = kill_cap / team1_kills if team1_kills >= team2_kills else kill_cap / team2_kills
 
-                    for idx, player in enumerate(game_players_to_insert):
+                    for player in game_players_to_insert:
                         player.kills = int(player.kills * kills_koeficient)
                         player.damage_dealt = int(player.damage_dealt * kills_koeficient)
                         player.assists = int(player.assists * kills_koeficient)
@@ -645,8 +645,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     team1_weight_sum = sum(team1_death_weights)
                     team1_players = [player for player in game_players_to_insert if player.team == 'Team_1']
 
-                    for player, weight in zip(team1_players, team1_weight_sum):
-                        player_deaths_koeficient = (team1_new_kills * weight / weight_sum) / player.deaths
+                    for player, weight in zip(team1_players, team1_death_weights):
+                        player_deaths_koeficient = (team1_new_kills * weight / team1_weight_sum) / player.deaths
                         player.deaths = int(player.deaths * player_deaths_koeficient)
                         player.damage_taken = int(player.damage_taken * player_deaths_koeficient)
 
@@ -655,19 +655,19 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     team2_weight_sum = sum(team2_death_weights)
                     team2_players = [player for player in game_players_to_insert if player.team == 'Team_2']
                         
-                    for player, weight in zip(team2_players, team2_weight_sum):
-                        player_deaths_koeficient = (team2_new_kills * weight / weight_sum) / player.deaths
+                    for player, weight in zip(team2_players, team2_death_weights):
+                        player_deaths_koeficient = (team2_new_kills * weight / team2_weight_sum) / player.deaths
                         player.deaths = int(player.deaths * player_deaths_koeficient)
                         player.damage_taken = int(player.damage_taken * player_deaths_koeficient)
                         if playtime / player.deaths < player.longest_time_alive * kills_koeficient:
-                            player.longest_time_alive = random.randrange(int(playtime / player.death), int(player.longest_time_alive * kills_koeficient) + 1, 1)
+                            player.longest_time_alive = random.randrange(int(playtime / player.deaths), int(player.longest_time_alive * kills_koeficient) + 1, 1)
                         else:
                             player.longest_time_alive = int(player.longest_time_alive * kills_koeficient)
 
                     team1_domination_points = 0
                     team2_domination_points = 0
 
-                    for idx, player in enumerate(game_players_to_insert):
+                    for player in game_players_to_insert:
                         old_objective_time = player.objective_time
                         player.objective_time = min(max(player.objective_time + 15 * player.kills - 20 * player.deaths, 10), int(0.8 * playtime))
                         objective_time_ratio = player.objective_time / old_objective_time
@@ -695,9 +695,9 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                         point_koeficient = game_type.point_limit / team2_domination_points
                         winning_team = 'Team_2'
 
-                    for idx, player in enumerate(game_players_to_insert):
+                    for player in game_players_to_insert:
                         points = team1_domination_points if player.team == 'Team_1' else team2_domination_points
-                        player.domintation_points = point_koeficient * points
+                        player.domination_points = point_koeficient * points
                         if winning_team == 'Tie':
                             player.team_placement = 1
                             player.is_tie = True
@@ -708,11 +708,11 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                             player.team_placement = 2
                             player.is_tie = False
 
-                if game_type == 'SAD':
+                if game_type.type == 'SAD':
                     kill_cap = random.gauss(game_type.kill_cap, 6)
                     kills_koeficient = kill_cap / team1_kills if team1_kills >= team2_kills else kill_cap / team2_kills
 
-                    for idx, player in enumerate(game_players_to_insert):
+                    for player in game_players_to_insert:
                         player.kills = int(player.kills * kills_koeficient)
                         player.damage_dealt = int(player.damage_dealt * kills_koeficient)
                         player.assists = int(player.assists * kills_koeficient)
@@ -723,8 +723,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     team1_weight_sum = sum(team1_death_weights)
                     team1_players = [player for player in game_players_to_insert if player.team == 'Team_1']
 
-                    for player, weight in zip(team1_players, team1_weight_sum):
-                        player_deaths_koeficient = (team1_new_kills * weight / weight_sum) / player.deaths
+                    for player, weight in zip(team1_players, team1_death_weights):
+                        player_deaths_koeficient = (team1_new_kills * weight / team1_weight_sum) / player.deaths
                         player.deaths = int(player.deaths * player_deaths_koeficient)
                         player.damage_taken = int(player.damage_taken * player_deaths_koeficient)
 
@@ -733,8 +733,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     team2_weight_sum = sum(team2_death_weights)
                     team2_players = [player for player in game_players_to_insert if player.team == 'Team_2']
                         
-                    for player, weight in zip(team2_players, team2_weight_sum):
-                        player_deaths_koeficient = (team2_new_kills * weight / weight_sum) / player.deaths
+                    for player, weight in zip(team2_players, team2_death_weights):
+                        player_deaths_koeficient = (team2_new_kills * weight / team2_weight_sum) / player.deaths
                         player.deaths = int(player.deaths * player_deaths_koeficient)
                         player.damage_taken = int(player.damage_taken * player_deaths_koeficient)
                         
@@ -749,11 +749,11 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     elif team1_rounds_won < team2_rounds_won:
                         winning_team = "Team_2"
 
-                    for player, weight in zip(team2_players, team2_weight_sum):
+                    for player in team2_players:
                         player.rounds_won = team1_rounds_won if player.team == "Team_1" else team2_rounds_won
                         player.rounds_lost = 30 - player.rounds_won
                         if playtime / player.deaths < player.longest_time_alive * kills_koeficient:
-                            player.longest_time_alive = random.randrange(int(playtime / player.death), int(player.longest_time_alive * kills_koeficient) + 1, 1)
+                            player.longest_time_alive = random.randrange(int(playtime / player.deaths), int(player.longest_time_alive * kills_koeficient) + 1, 1)
                         else:
                             player.longest_time_alive = int(player.longest_time_alive * kills_koeficient)
                         
@@ -798,9 +798,9 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
             STAT_ATTRS = ['kills', 'deaths', 'killstreak', 'longest_time_alive',
                 'contesting_kills', 'objective_time', 'accuracy', 'damage_dealt', 'damage_taken']
 
-            for idx, player in enumerate(game_players_to_insert):
-                mvp_weight_sum = sum(weight for _, (pid, weight) in mvp_attributes.items() if player.id == pid)
-                lvp_weight_sum = sum(weight for _, (pid, weight) in lvp_attributes.items() if player.id == pid)
+            for player in game_players_to_insert:
+                mvp_weight_sum = sum(weight for (pid, weight) in mvp_attributes.items() if player.id == pid)
+                lvp_weight_sum = sum(weight for (pid, weight) in lvp_attributes.items() if player.id == pid)
 
                 if current_mvp[1] < mvp_weight_sum:
                     current_mvp = (player.id, mvp_weight_sum)
@@ -840,7 +840,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     if better_stats_count > len(STAT_ATTRS) / 2:
                         current_lvp = (player.id, lvp_weight_sum)
 
-            for idx, game_player in game_players_to_insert:
+            for game_player in game_players_to_insert:
                 is_mvp = bool(game_player.id == current_mvp[0])
                 is_lvp = bool(game_player.id == current_lvp[0])
                 player_stats = get_stat_parameters(game_type, game_player.true_rating)
@@ -849,7 +849,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                 ).first()
                 player_stats_calculated = compute_remaining_stats(game_player, game_player_game_type_stats, playtime, is_mvp, is_lvp)
 
-                player = GamePlayer(
+                game_player = GamePlayer(
                     game=game,
                     player_id=game_player.player_id,
                     team=game_player.team,
