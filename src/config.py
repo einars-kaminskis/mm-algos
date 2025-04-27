@@ -64,7 +64,7 @@ GAME_TYPES = [
                 'mean_assists': 1.0, 'sd_assists': 0.5, # ~1 assist
                 'mean_accuracy':18.0,'sd_accuracy':5.0, # mid of 20%–25%
                 'mean_headshot_accuracy':6.0, 'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':8.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':8.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':3,   'sd_best_killstreak':1,
 
                 # For GamePlayer:
@@ -87,7 +87,7 @@ GAME_TYPES = [
                 'mean_assists': 1.5,'sd_assists': 0.7,
                 'mean_accuracy':25.0,'sd_accuracy':5.0,
                 'mean_headshot_accuracy':8.0,'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':11.0,'sd_torso_and_arm_accuracy':4.5,
+                'mean_torso_accuracy':11.0,'sd_torso_accuracy':4.5,
                 'mean_best_killstreak':5,  'sd_best_killstreak':2,
 
                 # For GamePlayer:
@@ -110,7 +110,7 @@ GAME_TYPES = [
                 'mean_assists': 2.0,'sd_assists': 1.0,
                 'mean_accuracy':36.0,'sd_accuracy':6.0, # pro ~40 %
                 'mean_headshot_accuracy':15.0,'sd_headshot_accuracy':2.5,
-                'mean_torso_and_arm_accuracy':16.0,'sd_torso_and_arm_accuracy':3.0,
+                'mean_torso_accuracy':16.0,'sd_torso_accuracy':3.0,
                 'mean_best_killstreak':10,'sd_best_killstreak':3,
                 
                 # For GamePlayer:
@@ -145,7 +145,7 @@ GAME_TYPES = [
                 'mean_assists': 0,  'sd_assists': 0,
                 'mean_accuracy':18.0,'sd_accuracy':5.0,
                 'mean_headshot_accuracy':6.0, 'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':8.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':8.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':2,  'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -168,7 +168,7 @@ GAME_TYPES = [
                 'mean_assists': 0,  'sd_assists': 0,
                 'mean_accuracy':25.0,'sd_accuracy':5.0,
                 'mean_headshot_accuracy':8.0,'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':11.0,'sd_torso_and_arm_accuracy':4.5,
+                'mean_torso_accuracy':11.0,'sd_torso_accuracy':4.5,
                 'mean_best_killstreak':4,  'sd_best_killstreak':1.5,
                 
                 # For GamePlayer:
@@ -191,7 +191,7 @@ GAME_TYPES = [
                 'mean_assists': 0,  'sd_assists': 0,
                 'mean_accuracy':36.0,'sd_accuracy':6.0,
                 'mean_headshot_accuracy':15.0,'sd_headshot_accuracy':2.5,
-                'mean_torso_and_arm_accuracy':16.0,'sd_torso_and_arm_accuracy':3.0,
+                'mean_torso_accuracy':16.0,'sd_torso_accuracy':3.0,
                 'mean_best_killstreak':6,  'sd_best_killstreak':2,
                 
                 # For GamePlayer:
@@ -227,7 +227,7 @@ GAME_TYPES = [
                 'mean_assists': 2,   'sd_assists':   1.5,
                 'mean_accuracy':15.0,'sd_accuracy':6.0,
                 'mean_headshot_accuracy':5.0, 'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':7.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':7.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':3,   'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -250,7 +250,7 @@ GAME_TYPES = [
                 'mean_assists': 3,   'sd_assists':   2,
                 'mean_accuracy':23.0,'sd_accuracy':4.0,
                 'mean_headshot_accuracy':7.0,'sd_headshot_accuracy':2.0,
-                'mean_torso_and_arm_accuracy':11.0,'sd_torso_and_arm_accuracy':3.5,
+                'mean_torso_accuracy':11.0,'sd_torso_accuracy':3.5,
                 'mean_best_killstreak':5,   'sd_best_killstreak':2,
                 
                 # For GamePlayer:
@@ -273,7 +273,7 @@ GAME_TYPES = [
                 'mean_assists': 4,   'sd_assists':   3,
                 'mean_accuracy':33.0,'sd_accuracy':4.0,
                 'mean_headshot_accuracy':14.0,'sd_headshot_accuracy':2.0,
-                'mean_torso_and_arm_accuracy':14.5,'sd_torso_and_arm_accuracy':3.0,
+                'mean_torso_accuracy':14.5,'sd_torso_accuracy':3.0,
                 'mean_best_killstreak':8,   'sd_best_killstreak':3,
                 
                 # For GamePlayer:
@@ -308,7 +308,7 @@ GAME_TYPES = [
                 'mean_assists':  0,  'sd_assists':  0,
                 'mean_accuracy':10.0,'sd_accuracy':6.0,
                 'mean_headshot_accuracy':1.0, 'sd_headshot_accuracy':1.0,
-                'mean_torso_and_arm_accuracy':5.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':5.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':1,  'sd_best_killstreak':0.5,
                 
                 # For GamePlayer:
@@ -331,7 +331,7 @@ GAME_TYPES = [
                 'mean_assists':  0,  'sd_assists':  0,
                 'mean_accuracy':15.0,'sd_accuracy':5.0,
                 'mean_headshot_accuracy':4.0, 'sd_headshot_accuracy':2.0,
-                'mean_torso_and_arm_accuracy':7.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':7.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':2,  'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -354,7 +354,7 @@ GAME_TYPES = [
                 'mean_assists':  0,  'sd_assists':  0,
                 'mean_accuracy':25.0,'sd_accuracy':7.0,
                 'mean_headshot_accuracy':7.0,'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':10.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':10.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':3,  'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -390,7 +390,7 @@ GAME_TYPES = [
                 'mean_assists':  1, 'sd_assists':  1,
                 'mean_accuracy':10.0,'sd_accuracy':6.0,
                 'mean_headshot_accuracy':1.0, 'sd_headshot_accuracy':1.0,
-                'mean_torso_and_arm_accuracy':5.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':5.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':2, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -413,7 +413,7 @@ GAME_TYPES = [
                 'mean_assists':  2, 'sd_assists':  1,
                 'mean_accuracy':15.0,'sd_accuracy':5.0,
                 'mean_headshot_accuracy':4.0, 'sd_headshot_accuracy':2.0,
-                'mean_torso_and_arm_accuracy':7.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':7.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':3, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -436,7 +436,7 @@ GAME_TYPES = [
                 'mean_assists':  4, 'sd_assists':  2,
                 'mean_accuracy':25.0,'sd_accuracy':7.0,
                 'mean_headshot_accuracy':7.0,'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':10.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':10.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':4, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -473,7 +473,7 @@ GAME_TYPES = [
                 'mean_assists': 3,  'sd_assists':  2,
                 'mean_accuracy':12.0,'sd_accuracy':7.0,
                 'mean_headshot_accuracy':3.0,'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':6.0,'sd_torso_and_arm_accuracy':5.0,
+                'mean_torso_accuracy':6.0,'sd_torso_accuracy':5.0,
                 'mean_best_killstreak':3, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -496,7 +496,7 @@ GAME_TYPES = [
                 'mean_assists': 2,  'sd_assists': 2,
                 'mean_accuracy':30.0,'sd_accuracy':5.0,
                 'mean_headshot_accuracy':13.0,'sd_headshot_accuracy':3.0,
-                'mean_torso_and_arm_accuracy':11.0,'sd_torso_and_arm_accuracy':4.0,
+                'mean_torso_accuracy':11.0,'sd_torso_accuracy':4.0,
                 'mean_best_killstreak':4, 'sd_best_killstreak':1,
                 
                 # For GamePlayer:
@@ -519,7 +519,7 @@ GAME_TYPES = [
                 'mean_assists':                1,    'sd_assists':                1,
                 'mean_accuracy':               50.0, 'sd_accuracy':               4.0,
                 'mean_headshot_accuracy':      30.0, 'sd_headshot_accuracy':      3.0,
-                'mean_torso_and_arm_accuracy': 15.0, 'sd_torso_and_arm_accuracy': 2.0,
+                'mean_torso_accuracy': 15.0, 'sd_torso_accuracy': 2.0,
                 'mean_best_killstreak':        5,    'sd_best_killstreak':        1,
                 
                 # For GamePlayer:
@@ -898,7 +898,7 @@ Database Models (Based on models.py)
                                                          which not only include the core attributes, but also supporting ones like damage and kills, etc.
    - Kills, deaths, assists: Combat statistics for the game.
    - longest_time_alive: The longest duration the player stayed alive until death.
-   - headshot_damage_dealt, torso_and_arm_damage_dealt, leg_damage_dealt: Damage breakdown.
+   - headshot_damage_dealt, torso_damage_dealt, leg_damage_dealt: Damage breakdown.
    - damage_taken: Total damage received.
    - contesting_kills: Kills done near objectives or in them.
    - objective_time: Time spent in/on any objective.
@@ -923,7 +923,7 @@ Database Models (Based on models.py)
    - created_at: Timestamp when the stats record was created.
    - game_type: The game mode these stats pertain to.
    - true_rating: The current overall true rating for the player in that game mode.
-   - total_headshot_damage, total_torso_and_arm_damage, total_leg_damage: Aggregated damage stats.
+   - total_headshot_damage, total_torso_damage, total_leg_damage: Aggregated damage stats.
    - total_kills, total_deaths, total_assists: Aggregated combat stats.
    - total_damage_taken, total_damage_dealt, total_damage_missed: Aggregated damage metrics.
    - win_streak: Current win streak. Resets after a loss or tie, if ties are applicable.
