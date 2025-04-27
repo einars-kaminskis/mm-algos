@@ -914,9 +914,3 @@ def simulate_all_modes() -> None:
         logger.info(f"Starting simulation for game type: {game_type.type} ({game_type.simulated_games_count} games)")
         simulate_game_mode_games(game_type, ref_players_ids)
         logger.info(f"Completed simulation for game type: {game_type.type}")
-
-
-if __name__ == "__main__":
-    logger.info("Starting full data simulation...")
-    simulate_all_modes()
-    logger.info("Data simulation complete!")
