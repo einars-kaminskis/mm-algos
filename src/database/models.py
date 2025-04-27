@@ -36,58 +36,6 @@ class Game(Base):
 """
 GamePlayer model
 
-team - name of the team, e.g., "Team 1", "Team 2", etc., or "red", "blue", etc.
-       Even solo players will be in a team (solo team) for the sake of consistency.
-party_name - unique randomly generated party name, that allows to find players within the same party
-team_placement - overall placement based the game type's main objective/-s
-true_rating_before_game - simulated objective true rating of the player before game
-true_rating_after_game - simulated objective true rating of the player after the game
-is_most_valuable_player - the most positively impactful player in the game
-is_least_valuable_player - the most negatively impactful player in the game
-total_kills - amount of kills;
-total_deaths - amount of deaths;
-total_assists - amount of assists;
-longest_time_alive - longest period alive (in seconds);
-headshot_damage_dealt - damage dealth to enemies that were headshots;
-torso_and_arm_damage_dealt - damage dealth to enemies that were body or arm shots;
-leg_damage_dealt - damage dealth to enemies that were leg shots;
-damage_taken - amount of damage absorbed from enemy attacks;
-
-Objective-based game type only metrics:
-contesting_kills - amount of kills gotten near or at certain objectives, e.g.,
-                   flag points in CTF, hill zone in King of the Hill, the payload zone
-                   in a payload game type.
-objective_time - total time spent on objectives (in seconds)
-
-Game types that split players in different classes:
-character_class - the name of the class played in a certain game type, e.g.,
-                  tank, flank, healer, etc., or scout, recon, assault, etc.
-                  This metric impacts other metric importance since different
-                  classes should focus on different playstyles.
-
-domination_points
-
-Payload game type only metrics:
-points_earned - points awarded for getting the payload for your team or for
-                 it reaching the required destination.
-
-kills_per_minute - total_kills / (game's playtime / 60)
-deaths_per_minute - total_deaths / (game's playtime / 60)
-assists_per_minute - total_assists / (game's playtime / 60)
-damage_dealt - headshot_damage_dealt + torso_and_arm_damage_dealt + leg_damage_dealt
-damage_dealt_per_minute - damage_dealt / (game's playtime / 60)
-damage_taken_per_minute - damage_taken / (game's playtime / 60)
-headshot_damage_ratio - headshot_damage_dealt / damage_dealt
-torso_and_arm_damage_ratio - torso_and_arm_damage_dealt / damage_dealt
-leg_damage_ratio - leg_damage_dealt / damage_dealt
-damage_dealt_and_taken_ratio - damage_dealt / damage_taken
-kill_death_ratio - total_kills / total_deaths
-avg_damage_dealt_delta - avg_damage_dealt before the game - avg_damage_dealt after the game
-avg_damage_taken_delta - avg_damage_taken before the game - avg_damage_taken after the game
-avg_kills_delta - avg_kills before the game - avg_kills after the game
-avg_deaths_delta - avg_deaths before the game - avg_deaths after the game
-avg_assists_delta - avg_assists before the game - avg_assists after the game
-
 Association: GamePlayer with Player and Game in one-to-many
 """
 class GamePlayer(Base):
@@ -99,47 +47,42 @@ class GamePlayer(Base):
     created_at = Column(DateTime, default=GLOBAL_START_TIME)
     team = Column(String(50), nullable=False)
     party_name = Column(String(50))
-    team_placement = Column(Integer, nullable=False)
-    is_tie = Column(Boolean, default=False)
-    true_rating_before_game = Column(Integer, nullable=False)
-    true_rating_after_game = Column(Integer)
-    is_most_valuable_player = Column(Boolean, default=False)
-    is_least_valuable_player = Column(Boolean, default=False)
+
     kills = Column(Integer, default=0)
     deaths = Column(Integer, default=0)
     assists = Column(Integer, default=0)
-    longest_time_alive = Column(Float, default=0.0)
     headshot_damage_dealt = Column(Integer, default=0)
-    torso_and_arm_damage_dealt = Column(Integer, default=0)
+    torso_damage_dealt = Column(Integer, default=0)
     leg_damage_dealt = Column(Integer, default=0)
     damage_taken = Column(Integer, default=0)
-    contesting_kills = Column(Integer, default=0)
-    objective_time = Column(Float, default=0.0)
-    domination_points = Column(Integer, default=0)
-    
-    accuracy = Column(Float, default=0.0)
-    headshot_accuracy = Column(Float, default=0.0)
-    torso_accuracy = Column(Float, default=0.0)
-    leg_accuracy = Column(Float, default=0.0)
+    damage_dealt = Column(Integer, default=0)
     damage_missed = Column(Integer, default=0)
-    avg_damage_missed_delta = Column(Float, default=0.0)
-
+    accuracy = Column(Integer, default=0)
+    headshot_accuracy = Column(Integer, default=0)
+    torso_accuracy = Column(Integer, default=0)
+    leg_accuracy = Column(Integer, default=0)
+    contesting_kills = Column(Integer, default=0)
+    objective_time = Column(Integer, default=0)
+    longest_time_alive = Column(Integer, default=0)
     kills_per_minute = Column(Float, default=0.0)
     deaths_per_minute = Column(Float, default=0.0)
     assists_per_minute = Column(Float, default=0.0)
-    damage_dealt = Column(Integer, default=0)
     damage_dealt_per_minute = Column(Float, default=0.0)
     damage_taken_per_minute = Column(Float, default=0.0)
-    damage_dealt_and_taken_ratio = Column(Float, default=0.0)
-    kill_death_ratio = Column(Float, default=0.0)
-    avg_damage_dealt_delta = Column(Float, default=0.0)
-    avg_damage_taken_delta = Column(Float, default=0.0)
-    avg_kills_delta = Column(Float, default=0.0)
-    avg_deaths_delta = Column(Float, default=0.0)
-    avg_assists_delta = Column(Float, default=0.0)
-    killstreak = Column(Integer, default=0)
+    domination_points = Column(Integer, default=0)
     rounds_won = Column(Integer, default=0)
     rounds_lost = Column(Integer, default=0)
+    killstreak = Column(Integer, default=0)
+    
+    team_placement = Column(Integer)
+    is_tie = Column(Boolean, default=False)
+    is_most_valuable_player = Column(Boolean, default=False)
+    is_least_valuable_player = Column(Boolean, default=False)
+    kill_death_ratio = Column(Float, default=0.0)
+    damage_dealt_and_taken_ratio = Column(Float, default=0.0)
+
+    true_rating_before_game = Column(Integer, nullable=False)
+    true_rating_after_game = Column(Integer)
     
     game = relationship("Game", back_populates="game_players")
     player = relationship("Player", back_populates="game_players")
@@ -168,37 +111,6 @@ class Player(Base):
 """
 PlayerGameTypeStats model
 
-game_type - game type, e.g., TDM, King of the Hill, CTF, BR, etc.;
-true_rating - simulated objective true rating of the player for this game type
-total_headshot_damage - 
-total_torso_and_arm_damage - 
-total_leg_damage - 
-total_kills - 
-total_deaths - 
-total_assists - 
-total_damage_taken - 
-win_streak - 
-total_games_played - total amount of games played for this game type
-last_time_played -last date and time played for this game type
-
-total_damage_dealt - 
-avg_damage_dealt - 
-avg_damage_taken - 
-avg_kills - 
-avg_deaths - 
-avg_assists - 
-kill_death_ratio - 
-
-total_wins - 
-total_loses - 
-total_ties - 
-best_killstreak - 
-win_loss_ratio - 
-rounds_won_in_all_games - 
-rounds_lost_in_all_games - 
-rounds_played_in_all_games - 
-rounds_win_loss_ratio - 
-
 Association: PlayerGameTypeStats with Player in a one-to-many.
 """
 class PlayerGameTypeStats(Base):
@@ -208,44 +120,63 @@ class PlayerGameTypeStats(Base):
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime, default=GLOBAL_START_TIME)
     game_type = Column(String(50), nullable=False)
-    true_rating = Column(Float, default=300)
-    total_headshot_damage = Column(Integer, default=0)
-    total_torso_and_arm_damage = Column(Integer, default=0)
-    total_leg_damage = Column(Integer, default=0)
+
+    true_rating = Column(Float, default=0)
+    total_games_played = Column(Integer, default=0)
+
     total_kills = Column(Integer, default=0)
     total_deaths = Column(Integer, default=0)
     total_assists = Column(Integer, default=0)
+    total_headshot_damage = Column(Integer, default=0)
+    total_torso_damage = Column(Integer, default=0)
+    total_leg_damage = Column(Integer, default=0)
     total_damage_taken = Column(Integer, default=0)
-    win_streak = Column(Integer, default=0)
-    total_games_played = Column(Integer, default=0)
-    last_time_played = Column(DateTime, nullable=True)
     total_damage_dealt = Column(Integer, default=0)
     total_damage_missed = Column(Integer, default=0)
-    avg_damage_dealt = Column(Float, default=0.0)
-    avg_damage_taken = Column(Float, default=0.0)
-    avg_damage_missed = Column(Float, default=0.0)
     total_accuracy = Column(Float, default=0.0)
-    headshot_accuracy = Column(Float, default=0.0)
-    torso_accuracy = Column(Float, default=0.0)
-    leg_accuracy = Column(Float, default=0.0)
-    avg_kills = Column(Float, default=0.0)
-    avg_deaths = Column(Float, default=0.0)
-    avg_assists = Column(Float, default=0.0)
-    total_kill_death_ratio = Column(Float, default=0.0)
+    total_headshot_accuracy = Column(Float, default=0.0)
+    total_torso_accuracy = Column(Float, default=0.0)
+    total_leg_accuracy = Column(Float, default=0.0)
+    total_contesting_kills = Column(Integer, default=0)
+    total_objective_time = Column(Integer, default=0)
+    total_longest_time_alive = Column(Integer, default=0)
+    total_kills_per_minute = Column(Float, default=0.0)
+    total_deaths_per_minute = Column(Float, default=0.0)
+    total_assists_per_minute = Column(Float, default=0.0)
+    total_damage_dealt_per_minute = Column(Float, default=0.0)
+    total_damage_taken_per_minute = Column(Float, default=0.0)
+    best_killstreak = Column(Integer, default=0)
+
+    last_time_played = Column(Integer, default=0)
     total_wins = Column(Integer, default=0)
     total_loses = Column(Integer, default=0)
     total_ties = Column(Integer, default=0)
-    best_killstreak = Column(Integer, default=0)
+    win_streak = Column(Integer, default=0)
     win_loss_ratio = Column(Float, default=0.0)
+    total_kill_death_ratio = Column(Float, default=0.0)
+    tie_and_total_game_ratio = Column(Float, default=0.0)
+    total_damage_dealt_and_taken_ratio = Column(Float, default=0.0)
 
-    """
-    top_2_squad_count
-    top_3_squad_count
-    top_6_squad_count
-    top_2_solo_count
-    top_3_solo_count
-    top_10_solo_count
-    top_25_solo_count
-    """
+    avg_kills = Column(Float, default=0.0)
+    avg_deaths = Column(Float, default=0.0)
+    avg_assists = Column(Float, default=0.0)
+    avg_headshot_damage = Column(Float, default=0.0)
+    avg_torso_damage = Column(Float, default=0.0)
+    avg_leg_damage = Column(Float, default=0.0)
+    avg_damage_taken = Column(Float, default=0.0)
+    avg_damage_dealt = Column(Float, default=0.0)
+    avg_damage_missed = Column(Float, default=0.0)
+    avg_accuracy = Column(Float, default=0.0)
+    avg_headshot_accuracy = Column(Float, default=0.0)
+    avg_torso_accuracy = Column(Float, default=0.0)
+    avg_leg_accuracy = Column(Float, default=0.0)
+    avg_contesting_kills = Column(Float, default=0.0)
+    avg_objective_time = Column(Float, default=0.0)
+    avg_longest_time_alive = Column(Float, default=0.0)
+    avg_kills_per_minute = Column(Float, default=0.0)
+    avg_deaths_per_minute = Column(Float, default=0.0)
+    avg_assists_per_minute = Column(Float, default=0.0)
+    avg_damage_dealt_per_minute = Column(Float, default=0.0)
+    avg_damage_taken_per_minute = Column(Float, default=0.0)
 
     player = relationship("Player", back_populates="game_type_stats")

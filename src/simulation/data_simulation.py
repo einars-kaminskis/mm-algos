@@ -41,7 +41,7 @@ def simulate_game_time(prev_time: datetime.datetime, game_type: GameMode) -> Tup
     return new_time, playtime
 
 
-def compute_basic_stats(game_type: GameMode, player_stats: PlayerGameTypeStats, rank_avg_stats: dict, playtime: int) -> Dict[str, Any]:
+def compute_basic_stats(game_type: GameMode, rank_avg_stats: dict, playtime: int) -> Dict[str, Any]:
     # Random Gausian values based on averages for rank
     kills = int(random.gauss(rank_avg_stats["mean_kills"], rank_avg_stats["sd_kills"]))
     deaths = int(random.gauss(rank_avg_stats["mean_deaths"], rank_avg_stats["sd_deaths"]))
@@ -56,15 +56,15 @@ def compute_basic_stats(game_type: GameMode, player_stats: PlayerGameTypeStats, 
 
     accuracy = random.gauss((rank_avg_stats["mean_accuracy"]), (rank_avg_stats["sd_accuracy"])) / 100
     headshot_accuracy = min(random.gauss(rank_avg_stats["mean_headshot_accuracy"], rank_avg_stats["sd_headshot_accuracy"]) / 100, accuracy)
-    torso_accuracy = min(random.gauss(rank_avg_stats["mean_torso_and_arm_accuracy"], rank_avg_stats["sd_torso_and_arm_accuracy"]) / 100, accuracy - headshot_accuracy)
+    torso_accuracy = min(random.gauss(rank_avg_stats["mean_torso_accuracy"], rank_avg_stats["sd_torso_accuracy"]) / 100, accuracy - headshot_accuracy)
 
     # Calculatable values
     damage_missed = int((damage_dealt / accuracy) - damage_dealt)
     leg_accuracy = accuracy - headshot_accuracy - torso_accuracy
 
     headshot_damage_dealt = int(damage_dealt * headshot_accuracy)
-    torso_and_arm_damage_dealt = int(damage_dealt * torso_accuracy)
-    leg_damage_dealt = damage_dealt - headshot_damage_dealt - torso_and_arm_damage_dealt
+    torso_damage_dealt = int(damage_dealt * torso_accuracy)
+    leg_damage_dealt = damage_dealt - headshot_damage_dealt - torso_damage_dealt
 
     kills_per_minute = kills / playtime * 60 if playtime else 0
     deaths_per_minute = deaths / playtime * 60 if playtime else 0
@@ -74,14 +74,6 @@ def compute_basic_stats(game_type: GameMode, player_stats: PlayerGameTypeStats, 
 
     kill_death_ratio = kills / deaths if deaths else 0
     damage_dealt_and_taken_ratio = damage_dealt / damage_taken if damage_taken else 0
-
-    # Averages
-    avg_kills_delta = ((player_stats.total_kills + kills) / (player_stats.total_games_played + 1)) - player_stats.avg_kills
-    avg_deaths_delta = ((player_stats.total_deaths + deaths) / (player_stats.total_games_played + 1)) - player_stats.avg_deaths
-    avg_assists_delta = ((player_stats.total_assists + assists) / (player_stats.total_games_played + 1)) - player_stats.avg_assists
-    avg_damage_dealt_delta = ((player_stats.total_damage_dealt + damage_dealt) / (player_stats.total_games_played + 1)) - player_stats.avg_damage_dealt
-    avg_damage_taken_delta = ((player_stats.total_damage_taken + damage_taken) / (player_stats.total_games_played + 1)) - player_stats.avg_damage_taken
-    avg_damage_missed_delta = ((player_stats.total_damage_missed + damage_missed) / (player_stats.total_games_played + 1)) - player_stats.avg_damage_missed
 
     objective_time = min(max(int(random.gauss(rank_avg_stats["mean_objective_time"], rank_avg_stats["sd_objective_time"])), 10), int(0.8 * playtime))
 
@@ -102,7 +94,7 @@ def compute_basic_stats(game_type: GameMode, player_stats: PlayerGameTypeStats, 
         "killstreak": killstreak,
 
         "headshot_damage_dealt": headshot_damage_dealt,
-        "torso_and_arm_damage_dealt": torso_and_arm_damage_dealt,
+        "torso_damage_dealt": torso_damage_dealt,
         "leg_damage_dealt": leg_damage_dealt,
 
         "accuracy": accuracy,
@@ -121,24 +113,17 @@ def compute_basic_stats(game_type: GameMode, player_stats: PlayerGameTypeStats, 
         "kill_death_ratio": kill_death_ratio,
         "damage_dealt_and_taken_ratio": damage_dealt_and_taken_ratio,
 
-        "avg_kills_delta": avg_kills_delta,
-        "avg_deaths_delta": avg_deaths_delta,
-        "avg_assists_delta": avg_assists_delta,
-        "avg_damage_dealt_delta": avg_damage_dealt_delta,
-        "avg_damage_taken_delta": avg_damage_taken_delta,
-        "avg_damage_missed_delta": avg_damage_missed_delta,
-
         "objective_time": objective_time,
         "longest_time_alive": longest_time_alive,
     }
 
 
-def compute_remaining_stats(game_player: GamePlayer, player_stats: PlayerGameTypeStats, playtime: int, is_mvp: bool, is_lvp: bool) -> Dict[str, Any]:
+def compute_remaining_stats(game_player: GamePlayer, playtime: int, is_mvp: bool, is_lvp: bool) -> Dict[str, Any]:
     damage_missed = int((game_player.damage_dealt / game_player.accuracy) - game_player.damage_dealt)
 
     headshot_damage_dealt = int(game_player.damage_dealt * game_player.headshot_accuracy)
-    torso_and_arm_damage_dealt = int(game_player.damage_dealt * game_player.torso_accuracy)
-    leg_damage_dealt = game_player.damage_dealt - headshot_damage_dealt - torso_and_arm_damage_dealt
+    torso_damage_dealt = int(game_player.damage_dealt * game_player.torso_accuracy)
+    leg_damage_dealt = game_player.damage_dealt - headshot_damage_dealt - torso_damage_dealt
 
     kills_per_minute = game_player.kills / playtime * 60 if playtime else 0
     deaths_per_minute = game_player.deaths / playtime * 60 if playtime else 0
@@ -149,24 +134,14 @@ def compute_remaining_stats(game_player: GamePlayer, player_stats: PlayerGameTyp
     kill_death_ratio = game_player.kills / game_player.deaths if game_player.deaths else 0
     damage_dealt_and_taken_ratio = game_player.damage_dealt / game_player.damage_taken if game_player.damage_taken else 0
 
-    # Averages
-    avg_kills_delta = ((player_stats.total_kills + game_player.kills) / (player_stats.total_games_played + 1)) - player_stats.avg_kills
-    avg_deaths_delta = ((player_stats.total_deaths + game_player.deaths) / (player_stats.total_games_played + 1)) - player_stats.avg_deaths
-    avg_assists_delta = ((player_stats.total_assists + game_player.assists) / (player_stats.total_games_played + 1)) - player_stats.avg_assists
-    avg_damage_dealt_delta = ((player_stats.total_damage_dealt + game_player.damage_dealt) / (player_stats.total_games_played + 1)) - player_stats.avg_damage_dealt
-    avg_damage_taken_delta = ((player_stats.total_damage_taken + game_player.damage_taken) / (player_stats.total_games_played + 1)) - player_stats.avg_damage_taken
-    avg_damage_missed_delta = ((player_stats.total_damage_missed + damage_missed) / (player_stats.total_games_played + 1)) - player_stats.avg_damage_missed
-
     is_most_valuable_player = is_mvp
     is_least_valuable_player = is_lvp
-
-    true_rating_after_game = 0 # Need to think of a combination of all the performance metrics that create the new rank.
 
     return {
         "damage_missed": damage_missed,
 
         "headshot_damage_dealt": headshot_damage_dealt,
-        "torso_and_arm_damage_dealt": torso_and_arm_damage_dealt,
+        "torso_damage_dealt": torso_damage_dealt,
         "leg_damage_dealt": leg_damage_dealt,
 
         "kills_per_minute": kills_per_minute,
@@ -178,19 +153,55 @@ def compute_remaining_stats(game_player: GamePlayer, player_stats: PlayerGameTyp
         "kill_death_ratio": kill_death_ratio,
         "damage_dealt_and_taken_ratio": damage_dealt_and_taken_ratio,
 
-        "avg_kills_delta": avg_kills_delta,
-        "avg_deaths_delta": avg_deaths_delta,
-        "avg_assists_delta": avg_assists_delta,
-        "avg_damage_dealt_delta": avg_damage_dealt_delta,
-        "avg_damage_taken_delta": avg_damage_taken_delta,
-        "avg_damage_missed_delta": avg_damage_missed_delta,
-
         "is_most_valuable_player": is_most_valuable_player,
         "is_least_valuable_player": is_least_valuable_player,
-
-        "true_rating_after_game": true_rating_after_game,
     }
 
+def calculate_ranking(game_player: GamePlayer, player_stats: PlayerGameTypeStats, player_average_stats: dict, playtime: int) -> int:
+    
+    attributes = [
+    "kills",
+    "deaths",
+    "assists",
+    "damage_dealt",
+    "damage_taken",
+    "damage_missed",
+    "headshot_damage",
+    "torso_damage",
+    "leg_damage",
+    "accuracy",
+    "headshot_accuracy",
+    "torso_accuracy",
+    "leg_accuracy",
+    "contesting_kills",
+    "objective_time",
+    "longest_time_alive",
+    "kills_per_minute",
+    "deaths_per_minute",
+    "assists_per_minute",
+    "damage_dealt_per_minute",
+    "damage_taken_per_minute" ]
+
+    avg_deltas = {}
+    for attr in attributes:
+        if getattr(player_stats, f"avg_${attr}") > 0:
+            avg_deltas[f"delta_${attr}"] = (getattr(game_player, attr) - getattr(player_stats, f"avg_${attr}")) / getattr(player_stats, f"avg_${attr}")
+        else:
+            avg_deltas[f"delta_${attr}"] = 1.0 if getattr(game_player, attr) > 0 else 0.0  # if avg is zero, treat any positive performance as +1 and zero as 0
+
+    """
+    !!!!!!!!!!!!!!!!!!!!!!!
+
+    FINISH THIS!!!!!!!!!!!!!!
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    """
+
+
+
+    true_rating_after_game = 0
+
+    return true_rating_after_game
 
 """
 Update aggregated player stats based on the results of a game.
@@ -217,25 +228,51 @@ def update_player_stats(player_stats: PlayerGameTypeStats, game_player: GamePlay
     player_stats.last_time_played = game_player.created_at
     player_stats.true_rating = game_player.true_rating_after_game
     player_stats.total_headshot_damage += game_player.headshot_damage_dealt
-    player_stats.total_torso_and_arm_damage += game_player.torso_and_arm_damage_dealt
+    player_stats.total_torso_damage += game_player.torso_damage_dealt
     player_stats.total_leg_damage += game_player.leg_damage_dealt
+    player_stats.total_contesting_kills += game_player.contesting_kills
+    player_stats.total_objective_time += game_player.objective_time
+    player_stats.total_longest_time_alive += game_player.longest_time_alive
+    player_stats.total_kills_per_minute += game_player.kills_per_minute
+    player_stats.total_deaths_per_minute += game_player.deaths_per_minute
+    player_stats.total_assists_per_minute += game_player.assists_per_minute
+    player_stats.total_damage_dealt_per_minute += game_player.damage_dealt_per_minute
+    player_stats.total_damage_taken_per_minute += game_player.damage_taken_per_minute
 
     total_damage = player_stats.total_damage_dealt + player_stats.total_damage_missed
 
     if total_damage > 0:
         player_stats.total_accuracy = player_stats.total_damage_dealt / total_damage
-        player_stats.headshot_accuracy = player_stats.total_headshot_damage / total_damage
-        player_stats.torso_accuracy = player_stats.total_torso_and_arm_damage / total_damage
-        player_stats.leg_accuracy = player_stats.total_leg_damage / total_damage
+        player_stats.total_headshot_accuracy = player_stats.total_headshot_damage / total_damage
+        player_stats.total_torso_accuracy = player_stats.total_torso_damage / total_damage
+        player_stats.total_leg_accuracy = player_stats.total_leg_damage / total_damage
 
     if player_stats.total_games_played:
-        player_stats.avg_damage_dealt = player_stats.total_damage_dealt / player_stats.total_games_played
-        player_stats.avg_damage_taken = player_stats.total_damage_taken / player_stats.total_games_played
-        player_stats.avg_damage_missed = player_stats.total_damage_missed / player_stats.total_games_played
+        player_stats.tie_and_total_game_ratio = player_stats.total_ties / player_stats.total_games_played
+        player_stats.total_kill_death_ratio = player_stats.total_kills / player_stats.total_deaths if player_stats.total_deaths else 0
+        player_stats.total_damage_dealt_and_taken_ratio = player_stats.total_damage_dealt / player_stats.total_damage_taken if player_stats.total_damage_taken else 0
+        
         player_stats.avg_kills = player_stats.total_kills / player_stats.total_games_played
         player_stats.avg_deaths = player_stats.total_deaths / player_stats.total_games_played
         player_stats.avg_assists = player_stats.total_assists / player_stats.total_games_played
-        player_stats.total_kill_death_ratio = player_stats.total_kills / player_stats.total_deaths if player_stats.total_deaths else 0
+        player_stats.avg_damage_dealt = player_stats.total_damage_dealt / player_stats.total_games_played
+        player_stats.avg_damage_taken = player_stats.total_damage_taken / player_stats.total_games_played
+        player_stats.avg_damage_missed = player_stats.total_damage_missed / player_stats.total_games_played
+        player_stats.avg_headshot_damage = player_stats.total_headshot_damage / player_stats.total_games_played
+        player_stats.avg_torso_damage = player_stats.total_torso_damage / player_stats.total_games_played
+        player_stats.avg_leg_damage = player_stats.total_leg_damage / player_stats.total_games_played
+        player_stats.avg_accuracy = player_stats.total_accuracy / player_stats.total_games_played
+        player_stats.avg_headshot_accuracy = player_stats.total_headshot_accuracy / player_stats.total_games_played
+        player_stats.avg_torso_accuracy = player_stats.total_torso_accuracy / player_stats.total_games_played
+        player_stats.avg_leg_accuracy = player_stats.total_leg_accuracy / player_stats.total_games_played
+        player_stats.avg_contesting_kills = player_stats.total_contesting_kills / player_stats.total_games_played
+        player_stats.avg_objective_time = player_stats.total_objective_time / player_stats.total_games_played
+        player_stats.avg_longest_time_alive = player_stats.total_longest_time_alive / player_stats.total_games_played
+        player_stats.avg_kills_per_minute = player_stats.total_kills_per_minute / player_stats.total_games_played
+        player_stats.avg_deaths_per_minute = player_stats.total_deaths_per_minute / player_stats.total_games_played
+        player_stats.avg_assists_per_minute = player_stats.total_assists_per_minute / player_stats.total_games_played
+        player_stats.avg_damage_dealt_per_minute = player_stats.total_damage_dealt_per_minute / player_stats.total_games_played
+        player_stats.avg_damage_taken_per_minute = player_stats.total_damage_taken_per_minute / player_stats.total_games_played
 
     player_stats.best_killstreak = max(player_stats.best_killstreak, game_player.killstreak)
 
@@ -243,7 +280,7 @@ def update_player_stats(player_stats: PlayerGameTypeStats, game_player: GamePlay
 """
 Compute initial stats for a player based on their rank and skill multiplier.
 """
-def compute_stats(true_rating: int, rank_avg_stats: dict,) -> Dict[str, Any]:
+def compute_stats(game_type: GameMode, true_rating: int, rank_avg_stats: dict,) -> Dict[str, Any]:
     total_games_played = int(random.gauss(rank_avg_stats["mean_total_games_played"], rank_avg_stats["sd_total_games_played"]))
     total_wins = int(random.gauss(rank_avg_stats["mean_total_wins"], rank_avg_stats["sd_total_wins"]))
     total_ties = int(random.gauss(rank_avg_stats["mean_total_ties"], rank_avg_stats["sd_total_ties"]))
@@ -271,21 +308,52 @@ def compute_stats(true_rating: int, rank_avg_stats: dict,) -> Dict[str, Any]:
         best_killstreak = max(best_killstreak, int(random.gauss(rank_avg_stats["mean_best_killstreak"], rank_avg_stats["sd_best_killstreak"])))
 
     total_accuracy = sum(random.gauss((rank_avg_stats["mean_accuracy"]), (rank_avg_stats["sd_accuracy"])) for i in range(total_games_played)) / (total_games_played * 100)
-    headshot_accuracy = sum(random.gauss(rank_avg_stats["mean_headshot_accuracy"], rank_avg_stats["sd_headshot_accuracy"]) for i in range(total_games_played)) / (total_games_played * 100)
-    torso_accuracy = sum(random.gauss(rank_avg_stats["mean_torso_and_arm_accuracy"], rank_avg_stats["sd_torso_and_arm_accuracy"]) for i in range(total_games_played)) / (total_games_played * 100)
+    total_headshot_accuracy = sum(random.gauss(rank_avg_stats["mean_headshot_accuracy"], rank_avg_stats["sd_headshot_accuracy"]) for i in range(total_games_played)) / (total_games_played * 100)
+    total_torso_accuracy = sum(random.gauss(rank_avg_stats["mean_torso_accuracy"], rank_avg_stats["sd_torso_accuracy"]) for i in range(total_games_played)) / (total_games_played * 100)
     
     total_damage_missed = int(total_damage_dealt / total_accuracy - total_damage_dealt)
-    leg_accuracy = total_accuracy - headshot_accuracy - torso_accuracy
+    total_leg_accuracy = total_accuracy - total_headshot_accuracy - total_torso_accuracy
     
-    total_headshot_damage = int(total_damage_dealt * headshot_accuracy)
-    total_torso_and_arm_damage = int(total_damage_dealt * torso_accuracy)
-    total_leg_damage = total_damage_dealt - total_headshot_damage - total_torso_and_arm_damage
+    total_headshot_damage = int(total_damage_dealt * total_headshot_accuracy)
+    total_torso_damage = int(total_damage_dealt * total_torso_accuracy)
+    total_leg_damage = total_damage_dealt - total_headshot_damage - total_torso_damage
 
+    total_contesting_kills = sum(int(random.gauss(rank_avg_stats["mean_contesting_kills"], rank_avg_stats["sd_contesting_kills"])) for i in range(total_games_played))
+    total_objective_time = sum(int(random.gauss(rank_avg_stats["mean_objective_time"], rank_avg_stats["sd_objective_time"])) for i in range(total_games_played))
+    total_longest_time_alive = sum(int(random.gauss(rank_avg_stats["mean_longest_time_alive"], rank_avg_stats["sd_longest_time_alive"])) for i in range(total_games_played))
+
+    total_playtime = 0
+    for i in range(total_games_played):
+        total_playtime += int(random.gauss(game_type.time_limit_mean, game_type.time_limit_variance))
+    total_kills_per_minute = total_kills / total_playtime * 60
+    total_deaths_per_minute = total_deaths / total_playtime * 60
+    total_assists_per_minute = total_assists / total_playtime * 60
+    total_damage_dealt_per_minute = total_damage_dealt / total_playtime * 60
+    total_damage_taken_per_minute = total_damage_taken / total_playtime * 60
+
+    total_kill_death_ratio = total_kills / total_deaths if total_deaths else 0
+    total_damage_dealt_and_taken_ratio = total_damage_dealt / total_damage_taken if total_damage_taken else 0
+    win_loss_ratio = total_wins / total_loses if total_loses else 0
+    tie_and_total_game_ratio = total_ties / total_games_played if total_games_played else 0
+
+    avg_headshot_damage = total_headshot_damage / total_games_played if total_games_played else 0
+    avg_torso_damage = total_torso_damage / total_games_played if total_games_played else 0
+    avg_leg_damage = total_leg_damage / total_games_played if total_games_played else 0
     avg_damage_missed = total_damage_missed / total_games_played if total_games_played else 0
     avg_damage_dealt = total_damage_dealt / total_games_played if total_games_played else 0
     avg_damage_taken = total_damage_taken / total_games_played if total_games_played else 0
-    total_kill_death_ratio = total_kills / total_deaths if total_deaths else 0
-    win_loss_ratio = total_wins / total_loses if total_loses else 0
+    avg_accuracy = total_accuracy / total_games_played if total_games_played else 0
+    avg_headshot_accuracy = total_headshot_accuracy / total_games_played if total_games_played else 0
+    avg_torso_accuracy = total_torso_accuracy / total_games_played if total_games_played else 0
+    avg_leg_accuracy = total_leg_accuracy / total_games_played if total_games_played else 0
+    avg_contesting_kills = total_contesting_kills / total_games_played if total_games_played else 0
+    avg_objective_time = total_objective_time / total_games_played if total_games_played else 0
+    avg_longest_time_alive = total_longest_time_alive / total_games_played if total_games_played else 0
+    avg_kills_per_minute = total_kills_per_minute / total_games_played if total_games_played else 0
+    avg_deaths_per_minute = total_deaths_per_minute / total_games_played if total_games_played else 0
+    avg_assists_per_minute = total_assists_per_minute / total_games_played if total_games_played else 0
+    avg_damage_dealt_per_minute = total_damage_dealt_per_minute / total_games_played if total_games_played else 0
+    avg_damage_taken_per_minute = total_damage_taken_per_minute / total_games_played if total_games_played else 0
 
     return {
         "true_rating": true_rating,
@@ -309,21 +377,49 @@ def compute_stats(true_rating: int, rank_avg_stats: dict,) -> Dict[str, Any]:
         "best_killstreak": best_killstreak,
 
         "total_accuracy": total_accuracy,
-        "headshot_accuracy": headshot_accuracy,
-        "torso_accuracy": torso_accuracy,
+        "total_headshot_accuracy": total_headshot_accuracy,
+        "total_torso_accuracy": total_torso_accuracy,
 
         "total_damage_missed": total_damage_missed,
-        "leg_accuracy": leg_accuracy,
+        "total_leg_accuracy": total_leg_accuracy,
 
         "total_headshot_damage": total_headshot_damage,
-        "total_torso_and_arm_damage": total_torso_and_arm_damage,
+        "total_torso_damage": total_torso_damage,
         "total_leg_damage": total_leg_damage,
 
+        "total_contesting_kills": total_contesting_kills,
+        "total_objective_time": total_objective_time,
+        "total_longest_time_alive": total_longest_time_alive,
+
+        "total_kills_per_minute": total_kills_per_minute,
+        "total_deaths_per_minute": total_deaths_per_minute,
+        "total_assists_per_minute": total_assists_per_minute,
+        "total_damage_dealt_per_minute": total_damage_dealt_per_minute,
+        "total_damage_taken_per_minute": total_damage_taken_per_minute,
+
+        "total_kill_death_ratio": total_kill_death_ratio,
+        "win_loss_ratio": win_loss_ratio,
+        "tie_and_total_game_ratio": tie_and_total_game_ratio,
+        "total_damage_dealt_and_taken_ratio": total_damage_dealt_and_taken_ratio,
+
+        "avg_headshot_damage": avg_headshot_damage,
+        "avg_torso_damage": avg_torso_damage,
+        "avg_leg_damage": avg_leg_damage,
         "avg_damage_missed": avg_damage_missed,
         "avg_damage_dealt": avg_damage_dealt,
         "avg_damage_taken": avg_damage_taken,
-        "total_kill_death_ratio": total_kill_death_ratio,
-        "win_loss_ratio": win_loss_ratio,
+        "avg_accuracy": avg_accuracy,
+        "avg_headshot_accuracy": avg_headshot_accuracy,
+        "avg_torso_accuracy": avg_torso_accuracy,
+        "avg_leg_accuracy": avg_leg_accuracy,
+        "avg_contesting_kills": avg_contesting_kills,
+        "avg_objective_time": avg_objective_time,
+        "avg_longest_time_alive": avg_longest_time_alive,
+        "avg_kills_per_minute": avg_kills_per_minute,
+        "avg_deaths_per_minute": avg_deaths_per_minute,
+        "avg_assists_per_minute": avg_assists_per_minute,
+        "avg_damage_dealt_per_minute": avg_damage_dealt_per_minute,
+        "avg_damage_taken_per_minute": avg_damage_taken_per_minute,
     }
 
 
@@ -351,7 +447,7 @@ def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[i
             interval_index = random.choices(range(len(rank_weights)), weights=rank_weights)[0]
             true_rating = random.randint(interval_index * 100, interval_index * 100 + 99)
             player_stats = get_stat_parameters(game_type, true_rating)
-            computed_stats = compute_stats(true_rating, player_stats)
+            computed_stats = compute_stats(game_type, true_rating, player_stats)
 
             stats = PlayerGameTypeStats(
                 player_id=player.id,
@@ -434,7 +530,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
 
             for ref_player in party_players_stats:
                 ref_stats = get_stat_parameters(game_type, ref_player.true_rating)
-                ref_stats_calculated = compute_basic_stats(game_type, ref_player, ref_stats, playtime)
+                ref_stats_calculated = compute_basic_stats(game_type, ref_stats, playtime)
 
                 game_players_to_insert.append(
                     GamePlayer(
@@ -456,7 +552,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     for _ in range(team_size, game_type.team_size + 1, 1):
                         team_player = game_players_stats[team_player_index]
                         team_player_stats = get_stat_parameters(game_type, team_player.true_rating)
-                        team_player_stats_calculated = compute_basic_stats(game_type, team_player, team_player_stats, playtime)
+                        team_player_stats_calculated = compute_basic_stats(game_type, team_player_stats, playtime)
                         game_players_to_insert.append(
                             GamePlayer(
                                 created_at=current_time,
@@ -849,7 +945,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                 game_player_game_type_stats = session.query(PlayerGameTypeStats).filter(
                     PlayerGameTypeStats.player_id == game_player.player_id,
                 ).first()
-                player_stats_calculated = compute_remaining_stats(game_player, game_player_game_type_stats, playtime, is_mvp, is_lvp)
+                player_stats_calculated = compute_remaining_stats(game_player, playtime, is_mvp, is_lvp)
 
                 new_game_player = GamePlayer(
                     created_at=current_time,
@@ -860,6 +956,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     true_rating_before_game=game_player.true_rating,
                     **player_stats_calculated
                 )
+                new_game_player.true_rating_after_game = calculate_ranking(new_game_player, game_player_game_type_stats, player_stats, playtime)
+
                 new_game_players_to_insert.append(new_game_player)
             
             game_players_to_insert = new_game_players_to_insert
