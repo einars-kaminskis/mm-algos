@@ -361,7 +361,7 @@ def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[i
                 **computed_stats
             )
         stats_to_create.append(stats)
-    session.bulk_save_objects(stats_to_create)
+    session.add_all(stats_to_create)
     session.commit()
     logger.info("Created stats for all players.")
 
@@ -431,7 +431,6 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                 player_count=player_count,
             )
             session.add(game)
-            session.commit()
 
             for ref_player in party_players_stats:
                 ref_stats = get_stat_parameters(game_type, ref_player.true_rating)
@@ -801,8 +800,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                 'contesting_kills', 'objective_time', 'accuracy', 'damage_dealt', 'damage_taken']
 
             for player in game_players_to_insert:
-                mvp_weight_sum = sum(weight for (pid, weight) in mvp_attributes.items() if player.id == pid)
-                lvp_weight_sum = sum(weight for (pid, weight) in lvp_attributes.items() if player.id == pid)
+                mvp_weight_sum = sum(weight for (pid, weight) in mvp_attributes.values() if player.id == pid)
+                lvp_weight_sum = sum(weight for (pid, weight) in lvp_attributes.values() if player.id == pid)
 
                 if current_mvp[1] < mvp_weight_sum:
                     current_mvp = (player.id, mvp_weight_sum)
@@ -842,6 +841,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     if better_stats_count > len(STAT_ATTRS) / 2:
                         current_lvp = (player.id, lvp_weight_sum)
 
+            new_game_players_to_insert = []
             for game_player in game_players_to_insert:
                 is_mvp = bool(game_player.id == current_mvp[0])
                 is_lvp = bool(game_player.id == current_lvp[0])
@@ -851,7 +851,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                 ).first()
                 player_stats_calculated = compute_remaining_stats(game_player, game_player_game_type_stats, playtime, is_mvp, is_lvp)
 
-                game_player = GamePlayer(
+                new_game_player = GamePlayer(
                     created_at=current_time,
                     game=game,
                     player_id=game_player.player_id,
@@ -860,9 +860,12 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     true_rating_before_game=game_player.true_rating,
                     **player_stats_calculated
                 )
+                new_game_players_to_insert.append(new_game_player)
+            
+            game_players_to_insert = new_game_players_to_insert
             
             logger.info(f"Inserting {len(game_players_to_insert)} game player records for game {game_index + 1} in mode {game_type.type} in bulk...")
-            session.bulk_save_objects(game_players_to_insert)
+            session.add_all(game_players_to_insert)
             session.commit()
             logger.info("Game player records inserted.")
             
@@ -904,7 +907,7 @@ def simulate_all_modes() -> None:
                 break
         players_to_create.append(Player(id=player_id, name=f"Player_{player_id}", party_name=party_name))
     
-    session.bulk_save_objects(players_to_create)
+    session.add_all(players_to_create)
     session.commit()
     logger.info(f"Created {len(players_to_create)} players.")
     
