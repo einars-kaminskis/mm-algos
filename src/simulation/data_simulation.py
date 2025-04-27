@@ -439,6 +439,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
 
                 game_players_to_insert.append(
                     GamePlayer(
+                        created_at=current_time,
                         game=game,
                         player_id=player_id,
                         team="Team_1",
@@ -459,6 +460,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                         team_player_stats_calculated = compute_basic_stats(game_type, team_player, team_player_stats, playtime)
                         game_players_to_insert.append(
                             GamePlayer(
+                                created_at=current_time,
                                 game=game,
                                 player_id=team_player.player_id,
                                 team=team_name,
@@ -850,6 +852,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                 player_stats_calculated = compute_remaining_stats(game_player, game_player_game_type_stats, playtime, is_mvp, is_lvp)
 
                 game_player = GamePlayer(
+                    created_at=current_time,
                     game=game,
                     player_id=game_player.player_id,
                     team=game_player.team,
