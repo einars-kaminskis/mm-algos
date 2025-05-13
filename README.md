@@ -85,20 +85,20 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
 
 - To quickly get rating data, use this command from the ``bash`` or ``zsh`` terminal:
   ```
-  docker exec -i 76376d529117 \
-  mysql -uuser -ppassword --batch --silent -D matchmaking_db \
+  docker exec -i <container_name_or_id> \
+  mysql -u<MYSQL_USER> -p<MYSQL_PASSWORD> --batch --silent -D matchmaking_db \
   -e "SELECT
          REPLACE(true_rating_after_game,'.',','),
          REPLACE(elo_after,'.',','),
          REPLACE(glicko_rating_after,'.',','),
          REPLACE(ts_rating_after,'.',',')
        FROM game_players
-       WHERE player_id = 3
+       WHERE player_id = 1
        ORDER BY id
-       LIMIT 600" \
+       LIMIT 2000" \
   | tr '\t' ';' > player_ratings.csv
   ```
-  This essentially lets you export all of the ratings from the image to the player_ratings.csv file for easy importing in an excel. If you want to do the same thing inside the docker image database, unfortunately you need to set certain permissions for the database user in order to export data onto files on your system otherwise you will be forbidden to do so. This is much simpler and doesn't require the hastle of giving permissions and messing something up.
+  This essentially lets you export 2000 game_players rows with the ratings from the image to the player_ratings.csv file for easy importing in an excel. If you want to do the same thing inside the docker image database, unfortunately you need to set certain permissions for the database user in order to export data onto files on your system otherwise you will be forbidden to do so. This is much simpler and doesn't require the hastle of giving permissions and messing something up.
 
 ### Some useful SQL select queries I used:
 - If you choose to enter the MySQL database inside the docker image, then these queries can be used there once the database is selected.
