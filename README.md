@@ -20,7 +20,7 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
 
   On ``Windows`` ``cmd``:
   ```
-  .venv\Scripts\activate.bash
+  .venv\Scripts\activate.bat
   ```
 
 - Check all the packages installed:
@@ -60,7 +60,7 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
 
 - To connect to your ``MySQL`` container:
   ```
-  docker exec -it <container_name_or_id> mysql -u <MYSQL_USER> -p<MYSQL_PASSWORD> -D matchmaking_db
+  docker exec -it <container_name_or_id> mysql -u<MYSQL_USER> -p<MYSQL_PASSWORD> -D matchmaking_db
   ```
   Replace ``container_name_or_id`` with the container id you can find with ``docker ps`` command and ``MYSQL_USER`` and ``MYSQL_PASSWORD`` with the ``docker-compose.yml`` environment data, or for the ``root`` user just use ``root`` and ``MYSQL_ROOT_PASSWORD``.
   
@@ -97,6 +97,10 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
        ORDER BY id
        LIMIT 2000" \
   | tr '\t' ';' > player_ratings.csv
+  ```
+  For windows use:
+  ```
+  docker exec -i c523537548a6 mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT REPLACE(true_rating_after_game,'.',','), REPLACE(elo_after,'.',','), REPLACE(glicko_rating_after,'.',','), REPLACE(ts_rating_after,'.',',') FROM game_players WHERE player_id = 1 ORDER BY id LIMIT 2000" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
   ```
   This essentially lets you export 2000 game_players rows with the ratings from the image to the player_ratings.csv file for easy importing in an excel. If you want to do the same thing inside the docker image database, unfortunately you need to set certain permissions for the database user in order to export data onto files on your system otherwise you will be forbidden to do so. This is much simpler and doesn't require the hastle of giving permissions and messing something up.
 

@@ -14,6 +14,8 @@ from ..config import (
     GAME_GAP,
     ONE_WEEK,
     ONE_YEAR,
+    BASE_BETA,
+    BASE_TAU,
     STAT_ATTRS,
     GAME_TYPES,
     HALF_MINUTE,
@@ -695,7 +697,7 @@ def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[i
 """
 Simulate games for a given game mode and update player stats.
 """
-def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) -> None:    
+def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], env) -> None:    
     player_count = game_type.team_size * game_type.team_count
     prev_player_party_name = None
     
@@ -733,14 +735,6 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
         for (ref_rating_coeficient, ref_games_count, party_coeficient, time_gap) in REF_COEF_AND_GAMES[f"player_{ref_player_id}"]:
             gap_added = False
             for _ in range(ref_games_count):
-                
-                total_games = session.query(Game.id).count()
-                draw_games  = session.query(Game.id).join(GamePlayer).filter(GamePlayer.is_tie.is_(True)).distinct().count()
-
-                draw_prob = min(draw_games / total_games if total_games else 0.0, 0.5)
-
-                env = trueskill.TrueSkill(draw_probability=draw_prob)
-
                 game_players_to_insert = []
                 filter_time = current_time + HALF_MINUTE
 
@@ -1418,6 +1412,14 @@ def simulate_all_modes() -> None:
         logger.info("Players already created")
     
     for game_type in [GAME_TYPES[0]]: # TODO: REVERT TO GAME_TYPES
+        if game_type.type in ['BR_1V99', 'BR_4V96']:
+            draw_probability = 0
+        else:
+            draw_probability = 0.01
+        env = trueskill.TrueSkill(
+            mu=0.0, sigma=TS_MAX_SIGMA,
+            beta=BASE_BETA, tau=BASE_TAU,
+            draw_probability=draw_probability)
         logger.info(f"Starting simulation for game type: {game_type.type}")
-        simulate_game_mode_games(game_type, ref_players_ids)
+        simulate_game_mode_games(game_type, ref_players_ids, env)
         logger.info(f"Completed simulation for game type: {game_type.type}")

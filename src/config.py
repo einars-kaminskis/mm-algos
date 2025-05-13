@@ -1,8 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from elote import EloCompetitor, Glicko2Competitor
-from dotenv import load_dotenv
-
-load_dotenv()  # This will load variables from .env file in the project root directory
 
 # Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
 class ZeroFloorElo(EloCompetitor):
@@ -909,7 +906,7 @@ RANK_DISTRIBUTION_WEIGHTS = [
     0.0002, 0.0002, 0.0002, 0.0002, 0.0002
 ]
 
-TOTAL_PLAYERS = 5000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
+TOTAL_PLAYERS = 20000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
 
 # Half and full team players with corresponding party names for each scenario
 # SCENARIO_PLAYER_PARTIES = [
@@ -964,15 +961,15 @@ Scenarios:
 
 # Testing REF_COEF_AND_GAMES (TODO: DELETE)
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.4, 100, 1.0, 0),(0.50, 100, 1.0, 0)],
-    "player_2": [(1.4, 50, 1.0, 0), (0.91, 50, 1.0, 0)],
-    "player_3": [(1.4, 25, 1.0, 0), (0.91, 25, 1.0, 0), (0.91, 50, 1.0, 180)],
-    "player_4": [(1.4, 25, 1.0, 0), (0.40, 25, 1.0, 0), (1.7, 50, 1.0, 0)],
+    "player_1": [(1.4, 400, 1.0, 0),(0.30, 400, 1.0, 0)],
+    "player_2": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
+    "player_3": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 300, 1.0, 180)],
+    "player_4": [(1.4, 200, 1.0, 0), (0.40, 200, 1.0, 0), (1.7, 300, 1.0, 0)],
 
-    "player_5": [(1.3, 200, 1.0, 0),(0.70, 200, 1.0, 0)],
-    "player_11": [(1.3, 100, 1.0, 0), (0.91, 100, 1.0, 0)],
-    "player_17": [(1.3, 50, 1.0, 0), (0.91, 50, 1.0, 0), (0.91, 100, 1.0, 180)],
-    "player_23": [(1.3, 50, 1.0, 0), (0.62, 50, 1.0, 0), (1.7, 100, 1.0, 0)],
+    "player_5": [(1.4, 600, 1.0, 0),(0.50, 600, 1.0, 0)],
+    "player_11": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
+    "player_17": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 300, 1.0, 180)],
+    "player_23": [(1.4, 200, 1.0, 0), (0.40, 200, 1.0, 0), (1.7, 300, 1.0, 0)],
 
     # "player_23": [(1.3, 200, 1.0, 0),(0.70, 200, 1.0, 0)],
     # "player_26": [(1.3, 100, 1.0, 0), (0.91, 100, 1.0, 0)],
@@ -987,7 +984,7 @@ REF_COEF_AND_GAMES = {
 # BR_4v96 games count = originally 300000, -> 1500 * 12
 # SAD games count = originally 300000, -> 1500 * 12
 REF_INITIAL_TRUE_RATING = 600
-REFERENCE_PLAYER_COUNT = 4 # For testing (TODO: CHANGE TO 40)
+REFERENCE_PLAYER_COUNT = 1 # For testing (TODO: CHANGE TO 40)
 
 # Time constants
 GLOBAL_START_TIME = datetime.now(timezone.utc) # Global start time for simulation
@@ -1001,6 +998,8 @@ GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 ELO_K_FACTOR = 32
 GLICKO_MAX_RD = 350.0
 GLICKO_MIN_RD = 50.0
-MAX_RANK = 5000.0
+MAX_RANK = 3700.0
 TS_MAX_SIGMA = MAX_RANK / 6 # 6 standard deviations (3 to each side) should cover all the ranks
-TS_MIN_SIGMA = 25.0
+TS_MIN_SIGMA = MAX_RANK / 60
+BASE_BETA = TS_MAX_SIGMA / 2
+BASE_TAU = TS_MAX_SIGMA / 100
