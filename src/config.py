@@ -1,10 +1,14 @@
-import os
 from datetime import datetime, timedelta, timezone
+from elote import EloCompetitor, Glicko2Competitor
 from dotenv import load_dotenv
 
 load_dotenv()  # This will load variables from .env file in the project root directory
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
+class ZeroFloorElo(EloCompetitor):
+    _minimum_rating = 0
+class ZeroFloorGlicko2(Glicko2Competitor):
+    _minimum_rating = 0
 
 class GameMode:
     def __init__(
@@ -17,12 +21,10 @@ class GameMode:
         kill_cap: int = None,
         point_limit: int = None,
         winning_round_limit: int = None,
-        base_k: float = None,
+        base_performance: float = None,
         group_sizes: list = None,
         adjustments: dict = None,
-        vp_weights: list = None, # Valuable player weight order:
-                                 # [kills, deaths, killstreak, time_alive, contesting_kills,
-                                 # objective_time, accuracy, damage_dealt, damage_taken]
+        vp_weights: dict = None,
         rank_delta_weights: dict = None,
     ) -> None:
         self.type = type
@@ -33,8 +35,8 @@ class GameMode:
         self.kill_cap = kill_cap
         self.point_limit = point_limit
         self.winning_round_limit = winning_round_limit
-        self.base_k = base_k
-        self.vp_weights = vp_weights if vp_weights is not None else []
+        self.base_performance = base_performance
+        self.vp_weights = vp_weights if vp_weights is not None else {}
         self.rank_delta_weights = rank_delta_weights if rank_delta_weights is not None else {}
         self.group_sizes = group_sizes if group_sizes is not None else []
         self.adjustments = adjustments if adjustments is not None else {}
@@ -47,9 +49,19 @@ GAME_TYPES = [
         time_limit_mean = 600, # seconds or 10 minutes
         time_limit_variance = 120, # seconds or 2 minutes
         kill_cap = 50,
-        base_k = 20.00,
-        vp_weights = [1.00, 0.67, 0.50, 0.33, 0.00, 0.00, 0.33, 0.50, 0.00],
+        base_performance = 20.00,
         group_sizes = [3, 6],
+        vp_weights = {
+          'kills': 1.00,
+          'deaths': 0.95,
+          'killstreak': 0.78,
+          'time_alive': 0.10,
+          'contesting_kills': 0.00,
+          'objective_time': 0.00,
+          'accuracy': 0.80,
+          'damage_dealt': 0.90,
+          'damage_taken': 0.84,
+        },
         adjustments = {
             # Low skill
             "low": {
@@ -61,10 +73,10 @@ GAME_TYPES = [
                 'mean_win_streak':           2, 'sd_win_streak':  1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':    8,  'sd_kills':   3,   # ~8 kills
+                'mean_kills':    8,  'sd_kills':   3,
                 'mean_deaths':  10,  'sd_deaths':   3,
-                'mean_assists': 1.0, 'sd_assists': 0.5, # ~1 assist
-                'mean_accuracy':0.18,'sd_accuracy':0.01, # mid of 20%–25%
+                'mean_assists': 1.0, 'sd_assists': 0.5,
+                'mean_accuracy':0.18,'sd_accuracy':0.01,
                 'mean_damage_missed': 3400, 'sd_damage_missed': 300, # Not used in calculating true_rating_after_game, because it is situational.
                 'mean_headshot_accuracy':0.06, 'sd_headshot_accuracy':0.005,
                 'mean_torso_accuracy':0.08,'sd_torso_accuracy':0.007,
@@ -85,7 +97,7 @@ GAME_TYPES = [
                 'mean_win_streak':          5, 'sd_win_streak':         2,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':   15, 'sd_kills':  5,   # ~15–18 kills
+                'mean_kills':   15, 'sd_kills':  5,
                 'mean_deaths':  15, 'sd_deaths':  5,
                 'mean_assists': 1.5,'sd_assists': 0.7,
                 'mean_accuracy':0.25,'sd_accuracy':0.015,
@@ -109,10 +121,10 @@ GAME_TYPES = [
                 'mean_win_streak':          8, 'sd_win_streak':         3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':   25, 'sd_kills':  7,   # ~20–30 kills
+                'mean_kills':   25, 'sd_kills':  7,
                 'mean_deaths':  19, 'sd_deaths':  6,
                 'mean_assists': 2.0,'sd_assists': 1.0,
-                'mean_accuracy':0.36,'sd_accuracy':0.02, # pro ~40 %
+                'mean_accuracy':0.36,'sd_accuracy':0.02,
                 'mean_damage_missed': 4200, 'sd_damage_missed': 400,
                 'mean_headshot_accuracy':0.15,'sd_headshot_accuracy':0.015,
                 'mean_torso_accuracy':0.16,'sd_torso_accuracy':0.02,
@@ -161,8 +173,18 @@ GAME_TYPES = [
         time_limit_mean = 600, # seconds or 10 minutes
         time_limit_variance = 120, # seconds or 2 minutes
         kill_cap = 50,
-        base_k = 15.00,
-        vp_weights = [1.00, 0.13, 0.38, 0.38, 0.00, 0.00, 0.25, 0.38, 0.00],
+        base_performance = 15.00,
+        vp_weights = {
+          'kills': 1.00,
+          'deaths': 0.95,
+          'killstreak': 0.78,
+          'time_alive': 0.10,
+          'contesting_kills': 0.00,
+          'objective_time': 0.00,
+          'accuracy': 0.80,
+          'damage_dealt': 0.90,
+          'damage_taken': 0.84,
+        },
         adjustments = {
             # Low skill
             "low": {
@@ -174,7 +196,7 @@ GAME_TYPES = [
                 'mean_win_streak':           1, 'sd_win_streak':   1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':    5, 'sd_kills':  3,   # ~3–5
+                'mean_kills':    5, 'sd_kills':  3,
                 'mean_deaths':  12, 'sd_deaths':  5,
                 'mean_assists': 0,  'sd_assists': 0,
                 'mean_accuracy':0.18,'sd_accuracy':0.01,
@@ -198,7 +220,7 @@ GAME_TYPES = [
                 'mean_win_streak':           5, 'sd_win_streak':         2,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':   13, 'sd_kills':  4,   # solo med ~10–15
+                'mean_kills':   13, 'sd_kills':  4,
                 'mean_deaths':  13, 'sd_deaths':  4,
                 'mean_assists': 0,  'sd_assists': 0,
                 'mean_accuracy':0.25,'sd_accuracy':0.015,
@@ -222,7 +244,7 @@ GAME_TYPES = [
                 'mean_win_streak':          8, 'sd_win_streak':         3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':   25, 'sd_kills':  8,   # solo high ~20–30
+                'mean_kills':   25, 'sd_kills':  8,
                 'mean_deaths':  20, 'sd_deaths':  6,
                 'mean_assists': 0,  'sd_assists': 0,
                 'mean_accuracy':0.36,'sd_accuracy':0.02,
@@ -274,8 +296,18 @@ GAME_TYPES = [
         time_limit_mean = 1020, # seconds or 17 minutes
         time_limit_variance = 180, # seconds or 3 minutes
         point_limit = 200, # 1 point per 5 seconds for each of the 3 zones
-        base_k = 20.00,
-        vp_weights = [0.14, 0.00, 0.00, 0.00, 0.14, 1.00, 0.07, 0.07, 0.00],
+        base_performance = 20.00,
+        vp_weights = {
+          'kills': 0.54,
+          'deaths': 0.48,
+          'killstreak': 0.45,
+          'time_alive': 0.40,
+          'contesting_kills': 0.80,
+          'objective_time': 1.00,
+          'accuracy': 0.50,
+          'damage_dealt': 0.59,
+          'damage_taken': 0.47,
+        },
         group_sizes = [3, 6],
         adjustments = {
             # Low skill
@@ -299,7 +331,7 @@ GAME_TYPES = [
                 
                 # For GamePlayer:
                 'mean_longest_time_alive': 70, 'sd_longest_time_alive': 30,
-                'mean_contesting_kills':1,   'sd_contesting_kills':1,   # objective fights
+                'mean_contesting_kills':1,   'sd_contesting_kills':1,
                 'mean_objective_time':       140, 'sd_objective_time':  40,
             },
             # Medium skill
@@ -388,8 +420,18 @@ GAME_TYPES = [
         time_limit_mean = 1200, # seconds or 20 minutes
         time_limit_variance = 180, # seconds or 3 minutes
         kill_cap = 99,
-        base_k = 25.00,
-        vp_weights = [0.63, 0.25, 0.13, 1.00, 0.00, 0.00, 0.13, 0.38, 0.00],
+        base_performance = 25.00,
+        vp_weights = {
+          'kills': 0.70,
+          'deaths': 0.10,
+          'killstreak': 0.70,
+          'time_alive': 1.00,
+          'contesting_kills': 0.00,
+          'objective_time': 0.00,
+          'accuracy': 0.60,
+          'damage_dealt': 0.68,
+          'damage_taken': 0.50,
+        },
         adjustments = {
             # Low skill
             "low": {
@@ -425,7 +467,7 @@ GAME_TYPES = [
                 'mean_win_streak':           3, 'sd_win_streak':          1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':    3,  'sd_kills':   2,  # med ~3–5 kills
+                'mean_kills':    3,  'sd_kills':   2,
                 'mean_deaths':   1,  'sd_deaths':   1,
                 'mean_assists':  0,  'sd_assists':  0,
                 'mean_accuracy':0.15,'sd_accuracy':0.01,
@@ -449,7 +491,7 @@ GAME_TYPES = [
                 'mean_win_streak':           8, 'sd_win_streak':          3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':    8,  'sd_kills':   3,  # high elite ~8–10
+                'mean_kills':    8,  'sd_kills':   3,
                 'mean_deaths':   1,  'sd_deaths':   0,
                 'mean_assists':  0,  'sd_assists':  0,
                 'mean_accuracy':0.25,'sd_accuracy':0.015,
@@ -501,8 +543,18 @@ GAME_TYPES = [
         time_limit_mean = 1380, # seconds or 23 minutes
         time_limit_variance = 240, # seconds or 4 minutes
         kill_cap = 96,
-        base_k = 25.00,
-        vp_weights = [0.57, 0.57, 0.00, 1.00, 0.00, 0.00, 0.29, 0.43, 0.00],
+        base_performance = 25.00,
+        vp_weights = {
+          'kills': 0.70,
+          'deaths': 0.10,
+          'killstreak': 0.70,
+          'time_alive': 1.00,
+          'contesting_kills': 0.00,
+          'objective_time': 0.00,
+          'accuracy': 0.60,
+          'damage_dealt': 0.68,
+          'damage_taken': 0.50,
+        },
         group_sizes = [2, 4],
         adjustments = {
             # Low skill
@@ -563,7 +615,7 @@ GAME_TYPES = [
                 'mean_win_streak':           8,'sd_win_streak':          3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':    6, 'sd_kills':  3,  # high squads ~6–8 kills
+                'mean_kills':    6, 'sd_kills':  3,
                 'mean_deaths':   1, 'sd_deaths':  1,
                 'mean_assists':  4, 'sd_assists':  2,
                 'mean_accuracy':0.25,'sd_accuracy':0.015,
@@ -616,8 +668,18 @@ GAME_TYPES = [
         time_limit_variance = 240, # seconds or 4 minutes
         winning_round_limit = 16, # for each team to win
         kill_cap = 109, # Average between 83 kills and 136 kills
-        base_k = 30.00,
-        vp_weights = [1.00, 0.57, 0.29, 0.00, 0.00, 0.00, 0.14, 0.29, 0.00],
+        base_performance = 30.00,
+        vp_weights = {
+          'kills': 0.88,
+          'deaths': 0.90,
+          'killstreak': 0.85,
+          'time_alive': 1.00,
+          'contesting_kills': 0.00,
+          'objective_time': 0.00,
+          'accuracy': 0.89,
+          'damage_dealt': 0.30,
+          'damage_taken': 0.28,
+        },
         group_sizes = [2, 5],
         adjustments = {
             # Low skill
@@ -630,7 +692,7 @@ GAME_TYPES = [
                 'mean_win_streak':           3, 'sd_win_streak':          1,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':    8, 'sd_kills':  3,   # avg ~8–10 kills
+                'mean_kills':    8, 'sd_kills':  3,
                 'mean_deaths':  16, 'sd_deaths':  4,
                 'mean_assists': 3,  'sd_assists':  2,
                 'mean_accuracy':0.12,'sd_accuracy':0.009,
@@ -654,7 +716,7 @@ GAME_TYPES = [
                 'mean_win_streak':           6, 'sd_win_streak':          2,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':   18, 'sd_kills': 4,   # avg ~15–18 kills
+                'mean_kills':   18, 'sd_kills': 4,
                 'mean_deaths':  15, 'sd_deaths': 4,
                 'mean_assists': 2,  'sd_assists': 2,
                 'mean_accuracy':0.30,'sd_accuracy':0.02,
@@ -678,7 +740,7 @@ GAME_TYPES = [
                 'mean_win_streak':             8,    'sd_win_streak':             3,
 
                 #For both PlayerGameTypeStats and GamePlayer:
-                'mean_kills':                  25,   'sd_kills':                  5, # elite ~25+ kills
+                'mean_kills':                  25,   'sd_kills':                  5,
                 'mean_deaths':                 10,   'sd_deaths':                 3,
                 'mean_assists':                1,    'sd_assists':                1,
                 'mean_accuracy':               0.50, 'sd_accuracy':               0.025,
@@ -728,12 +790,10 @@ GAME_TYPES = [
 # --------------------------------------------------------------------
 # Interpolation function for continuous scaling across rating ranges.
 # We assume three anchor points:
-#   - at rating 200: use low anchor,
-#   - at rating 1300: use medium anchor,
-#   - at rating 3000: use high anchor.
-# For ratings below 200, we extrapolate downward using the same slope as from 200 to 1300.
-# For ratings = 3000, we use the high anchor.
-# For ratings above 3000, we extrapolate upward using the same slope as from 1300 to 3000.
+#   - at rating 200: uses low skill metrics,
+#   - at rating 1300: uses medium skill metrics,
+#   - at rating 3000: uses high skill metrics.
+# --------------------------------------------------------------------
 def interpolate_stat(low_val, med_val, high_val, true_rating: float) -> int | float:
     if true_rating < 200:
         slope = abs(med_val - low_val) / 500.0
@@ -751,7 +811,6 @@ def interpolate_stat(low_val, med_val, high_val, true_rating: float) -> int | fl
     elif true_rating == 3000:
         result = high_val
     elif true_rating > 3000:
-        # Extrapolate with same slope as 1300->3000.
         slope = abs(high_val - med_val) / 500.0
         result = high_val + (true_rating - 3000) * slope
     return max(result, 0)
@@ -784,15 +843,28 @@ def get_stat_parameters(game_mode: GameMode, true_rating: float) -> dict:
     low_stats, med_stats, high_stats = (game_mode.adjustments["low"], game_mode.adjustments["med"], game_mode.adjustments["high"],)
     return interpolate_stats(low_stats, med_stats, high_stats, true_rating)
 
-# Return a UTC‑aware datetime or return unchanged.
+# Returns a UTC‑aware datetime or returns unchanged datetime.
 def ensure_utc(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
+
 # ------------------------
 # CONSTANTS
 # ------------------------
+STAT_ATTRS = [
+    'kills',
+    'deaths',
+    'killstreak',
+    'longest_time_alive',
+    'contesting_kills',
+    'objective_time',
+    'accuracy',
+    'damage_dealt',
+    'damage_taken',
+]
+
 TOTAL_ATTRIBUTES = [
     ("kills", 1),
     ("deaths", -1),
@@ -837,25 +909,31 @@ RANK_DISTRIBUTION_WEIGHTS = [
     0.0002, 0.0002, 0.0002, 0.0002, 0.0002
 ]
 
-TOTAL_PLAYERS = 40000
-# TOTAL_PLAYERS = 1000
+TOTAL_PLAYERS = 5000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
 
-# FOR REFERENCE PLAYER ADJUSTMENT:
 # Half and full team players with corresponding party names for each scenario
+# SCENARIO_PLAYER_PARTIES = [
+#     (range(5, 8), "linear_increase_decrease_half"),
+#     (range(8, 14), "linear_increase_decrease_full"),
+#     (range(14, 17), "increase_then_constant_half"),
+#     (range(17, 23), "increase_then_constant_full"),
+#     (range(23, 26), "skill_gap_half"),
+#     (range(26, 32), "skill_gap_full"),
+#     (range(32, 35), "huge_fall_then_jump_half"),
+#     (range(35, 41), "huge_fall_then_jump_full")
+# ]
+# For testing (TODO: DELETE)
 SCENARIO_PLAYER_PARTIES = [
-    (range(5, 8), "linear_increase_decrease_half"),
-    (range(8, 14), "linear_increase_decrease_full"),
-    (range(14, 17), "increase_then_constant_half"),
-    (range(17, 23), "increase_then_constant_full"),
-    (range(23, 26), "skill_gap_half"),
-    (range(26, 32), "skill_gap_full"),
-    (range(32, 35), "huge_fall_then_jump_half"),
-    (range(35, 41), "huge_fall_then_jump_full")
+    (range(5, 11), "linear_increase_decrease_full"),
+    (range(11, 17), "increase_then_constant_full"),
+    (range(17, 23), "skill_gap_full"),
+    (range(23, 29), "huge_fall_then_jump_full")
 ]
 
 
-# TESTED_RATING_COEFS = [0.85, 0.89, 0.91, 1.0, 1.3]
+# TESTED_RATING_COEFS = [0.85, 0.89, 0.91, 1.0, 1.3] (TODO: DELETE)
 """
+Scenarios:
 - linear increse in rank over 5000 games and then a linear decrease in 5000 games;
 
 - linear increase for the first 2500 games and then a constant unchanging rank for the last 2500 games;
@@ -867,53 +945,62 @@ SCENARIO_PLAYER_PARTIES = [
 - linear increase for the first 1250 games, then a huge fall in rank for 1250 games,
   then a huge jump in rank for 2500 games;
 """
-REF_COEF_AND_GAMES = {
-    "player_1": [(1.3, 1200, 1.0),(0.80, 1200, 1.0)],
-    "player_2": [(1.3, 600, 1.0), (0.91, 600, 1.0)],
-    "player_3": [(1.3, 300, 1.0), (0.91, 300, 1.0), (0.91, 600, 1.0)], #Need to implement gap here
-    "player_4": [(1.3, 300, 1.0), (0.80, 300, 1.0), (1.5, 600, 1.0)],
-
-    "player_5": [(1.3, 1200, 1.0),(0.80, 1200, 1.0)],
-    "player_8": [(1.3, 600, 1.0), (0.91, 600, 1.0)],
-    "player_14": [(1.3, 300, 1.0), (0.91, 300, 1.0), (0.91, 600, 1.0)], #Need to implement gap here
-    "player_17": [(1.3, 300, 1.0), (0.80, 300, 1.0), (1.5, 600, 1.0)],
-
-    "player_23": [(1.3, 1200, 1.0),(0.80, 1200, 1.0)],
-    "player_26": [(1.3, 600, 1.0), (0.91, 600, 1.0)],
-    "player_32": [(1.3, 300, 1.0), (0.91, 300, 1.0), (0.91, 600, 1.0)], #Need to implement gap here
-    "player_35": [(1.3, 300, 1.0), (0.80, 300, 1.0), (1.5, 600, 1.0)],
-}
 # REF_COEF_AND_GAMES = {
-#     "player_1": [(1.3, 100, 1.0),(0.80, 100, 1.0)],
-#     "player_2": [(1.3, 50, 1.0), (0.91, 50, 1.0)],
-#     "player_3": [(1.3, 25, 1.0), (0.91, 25, 1.0), (0.91, 50, 1.0)], #Need to implement gap here
-#     "player_4": [(1.3, 25, 1.0), (0.80, 25, 1.0), (1.5, 50, 1.0)],
+#     "player_1": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
+#     "player_2": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
+#     "player_3": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
+#     "player_4": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
 
-#     "player_5": [(1.3, 100, 1.0),(0.80, 100, 1.0)],
-#     "player_8": [(1.3, 50, 1.0), (0.91, 50, 1.0)],
-#     "player_14": [(1.3, 25, 1.0), (0.91, 25, 1.0), (0.91, 50, 1.0)], #Need to implement gap here
-#     "player_17": [(1.3, 25, 1.0), (0.80, 25, 1.0), (1.5, 50, 1.0)],
+#     "player_5": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
+#     "player_8": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
+#     "player_14": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
+#     "player_17": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
 
-#     "player_23": [(1.3, 100, 1.0),(0.80, 100, 1.0)],
-#     "player_26": [(1.3, 50, 1.0), (0.91, 50, 1.0)],
-#     "player_32": [(1.3, 25, 1.0), (0.91, 25, 1.0), (0.91, 50, 1.0)], #Need to implement gap here
-#     "player_35": [(1.3, 25, 1.0), (0.80, 25, 1.0), (1.5, 50, 1.0)],
+#     "player_23": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
+#     "player_26": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
+#     "player_32": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
+#     "player_35": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
 # }
-# TDM games count = 300000, -> 1500 * 12
-# FFA games count = 100000, -> 500 * 12
-# Domination games count = 300000, -> 1500 * 12
-# BR_1v99 games count = 100000, -> 500 * 12
-# BR_4v96 games count = 300000, -> 1500 * 12
-# SAD games count = 300000, -> 500 * 12
-REF_INITIAL_TRUE_RATING = 500
-REFERENCE_PLAYER_COUNT = 40
 
-# Global start time for simulation (e.g., now)
-GLOBAL_START_TIME = datetime.now(timezone.utc)
+# Testing REF_COEF_AND_GAMES (TODO: DELETE)
+REF_COEF_AND_GAMES = {
+    "player_1": [(1.4, 100, 1.0, 0),(0.50, 100, 1.0, 0)],
+    "player_2": [(1.4, 50, 1.0, 0), (0.91, 50, 1.0, 0)],
+    "player_3": [(1.4, 25, 1.0, 0), (0.91, 25, 1.0, 0), (0.91, 50, 1.0, 180)],
+    "player_4": [(1.4, 25, 1.0, 0), (0.40, 25, 1.0, 0), (1.7, 50, 1.0, 0)],
+
+    "player_5": [(1.3, 200, 1.0, 0),(0.70, 200, 1.0, 0)],
+    "player_11": [(1.3, 100, 1.0, 0), (0.91, 100, 1.0, 0)],
+    "player_17": [(1.3, 50, 1.0, 0), (0.91, 50, 1.0, 0), (0.91, 100, 1.0, 180)],
+    "player_23": [(1.3, 50, 1.0, 0), (0.62, 50, 1.0, 0), (1.7, 100, 1.0, 0)],
+
+    # "player_23": [(1.3, 200, 1.0, 0),(0.70, 200, 1.0, 0)],
+    # "player_26": [(1.3, 100, 1.0, 0), (0.91, 100, 1.0, 0)],
+    # "player_32": [(1.3, 50, 1.0, 0), (0.91, 50, 1.0, 0), (0.91, 100, 1.0, 180)],
+    # "player_35": [(1.3, 50, 1.0, 0), (0.62, 50, 1.0, 0), (1.7, 100, 1.0, 0)],
+}
+
+# TDM games count = originally 300000, -> 1500 * 12
+# FFA games count = originally 100000, -> 500 * 12
+# Domination games count = originally 300000, -> 1500 * 12
+# BR_1v99 games count = originally 100000, -> 500 * 12
+# BR_4v96 games count = originally 300000, -> 1500 * 12
+# SAD games count = originally 300000, -> 1500 * 12
+REF_INITIAL_TRUE_RATING = 600
+REFERENCE_PLAYER_COUNT = 4 # For testing (TODO: CHANGE TO 40)
+
+# Time constants
+GLOBAL_START_TIME = datetime.now(timezone.utc) # Global start time for simulation
 
 ONE_WEEK = timedelta(weeks=1)
 ONE_YEAR = timedelta(days=365)
 HALF_MINUTE = timedelta(seconds=30)
+GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 
-# Fixed gap between games (2 minutes)
-GAME_GAP = timedelta(minutes=2)
+# Test algorithm constants
+ELO_K_FACTOR = 32
+GLICKO_MAX_RD = 350.0
+GLICKO_MIN_RD = 50.0
+MAX_RANK = 5000.0
+TS_MAX_SIGMA = MAX_RANK / 6 # 6 standard deviations (3 to each side) should cover all the ranks
+TS_MIN_SIGMA = 25.0

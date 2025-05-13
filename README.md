@@ -13,7 +13,7 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   python -m venv .venv
   ```
 
-- Start virtual environment from ``bash`` or ``zsh`` or ``macOS`` terminal:
+- Start virtual environment from ``bash`` or ``zsh`` terminal:
   ```
   source .venv/bin/activate
   ```
@@ -37,11 +37,13 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   ```
   pip install -r requirements.txt
   ```
+
 - Create ``MySQL`` container with the volume on docker for the database:
   ```
   docker-compose up -d
   ```
   Remember to have docker installed on your machine beforehand.
+
 - To drop the container and volume, and start over, if something ain't working right, do:
   ```
   docker-compose down -v
@@ -50,17 +52,19 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   ```
   docker-compose down
   ```
+
 - To check what containers are active:
   ```
   docker ps
   ```
+
 - To connect to your ``MySQL`` container:
   ```
-  docker exec -it <container_name_or_id> mysql -u <MYSQL_USER> -p<MYSQL_PASSWORD>
+  docker exec -it <container_name_or_id> mysql -u <MYSQL_USER> -p<MYSQL_PASSWORD> -D matchmaking_db
   ```
   Replace ``container_name_or_id`` with the container id you can find with ``docker ps`` command and ``MYSQL_USER`` and ``MYSQL_PASSWORD`` with the ``docker-compose.yml`` environment data, or for the ``root`` user just use ``root`` and ``MYSQL_ROOT_PASSWORD``.
   
-  After connecting to the container, you need to choose the database you want to work with. In our case it is ``matchmaking_db``, so you do this:
+  After connecting to the container, if you don't add `` -D matchmaking_db`` and want to access a different database, then you need to choose the database you want to work with. In our case it is ``matchmaking_db``, so you do this:
   ```
   \u matchmaking_db
   ```
@@ -79,7 +83,25 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   python main.py
   ```
 
-### Some useful SQL select queries:
+- To quickly get rating data, use this command from the ``bash`` or ``zsh`` terminal:
+  ```
+  docker exec -i 76376d529117 \
+  mysql -uuser -ppassword --batch --silent -D matchmaking_db \
+  -e "SELECT
+         REPLACE(true_rating_after_game,'.',','),
+         REPLACE(elo_after,'.',','),
+         REPLACE(glicko_rating_after,'.',','),
+         REPLACE(ts_rating_after,'.',',')
+       FROM game_players
+       WHERE player_id = 3
+       ORDER BY id
+       LIMIT 600" \
+  | tr '\t' ';' > player_ratings.csv
+  ```
+  This essentially lets you export all of the ratings from the image to the player_ratings.csv file for easy importing in an excel. If you want to do the same thing inside the docker image database, unfortunately you need to set certain permissions for the database user in order to export data onto files on your system otherwise you will be forbidden to do so. This is much simpler and doesn't require the hastle of giving permissions and messing something up.
+
+### Some useful SQL select queries I used:
+- If you choose to enter the MySQL database inside the docker image, then these queries can be used there once the database is selected.
   ```
   SELECT * FROM player_game_type_stats LIMIT 1;
   ```
@@ -88,6 +110,15 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   ```
   ```
   SELECT true_rating_after_game FROM game_players WHERE player_id = 1 LIMIT 600;
+  ```
+  ```
+  SELECT elo_after FROM game_players WHERE player_id = 1 LIMIT 200;
+  ```
+  ```
+  SELECT glicko_rating_after FROM game_players WHERE player_id = 1 LIMIT 200;
+  ```
+  ```
+  SELECT ts_rating_after FROM game_players WHERE player_id = 1 LIMIT 200;
   ```
   ```
   SELECT * FROM game_players WHERE game_id IN (40, 41, 42);
@@ -101,9 +132,11 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   ```
   SELECT game_id, is_most_valuable_player FROM game_players WHERE player_id = 1 LIMIT 100;
   ```
+- Find all player_game_type_stats, where rating is below 300 and they are not the 40 reference players.
   ```
   SELECT * FROM player_game_type_stats WHERE true_rating < 300 AND player_id NOT IN (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40) AND game_type = 'TDM' LIMIT 20;
   ```
+- The same query inside data_simulation.py to find opponents (not one of the 40 reference players) for a TDM game with a last_time_played being before ``2025-05-04 13:00:00`` for the player and their rank being +/- 300 points of the reference player.
   ```
   WITH ref AS (
     SELECT

@@ -2,7 +2,7 @@ from sqlalchemy import (
     Column, Integer, String, Float, DateTime, ForeignKey, Boolean
 )
 from sqlalchemy.orm import relationship, declarative_base
-from ..config import GLOBAL_START_TIME
+from ..config import ONE_YEAR, GLOBAL_START_TIME, GLICKO_MAX_RD, TS_MAX_SIGMA
 
 Base = declarative_base()
 
@@ -13,6 +13,9 @@ type - game type, e.g., TDM, King of the Hill, CTF, BR, etc.;
 playtime - game duration (in seconds);
 team_count - number of teams in the game;
 team_size - number of players per team.
+kill_cap - 
+point_limit - 
+winning_round_limit - 
 player_count - number of total players in the game.
 
 Association: Game with Player in a many-to-many through GamePlayer
@@ -81,8 +84,27 @@ class GamePlayer(Base):
     kill_death_ratio = Column(Float, default=0.0)
     damage_dealt_and_taken_ratio = Column(Float, default=0.0)
 
+    # Simulation rating
     true_rating_before_game = Column(Float, nullable=False)
     true_rating_after_game = Column(Float, default=0.0)
+
+    # Elo rating
+    elo_before = Column(Float, nullable=False)
+    elo_after = Column(Float, default=0.0)
+
+    # Glicko‑2 rating
+    glicko_rating_before = Column(Float, nullable=False)
+    glicko_rd_before = Column(Float, nullable=False)
+    glicko_volatility_before = Column(Float, nullable=False)
+    glicko_rating_after = Column(Float, default=0.0)
+    glicko_rd_after = Column(Float, default=GLICKO_MAX_RD)
+    glicko_volatility_after = Column(Float, default=0.06)
+
+    # TrueSkill rating
+    ts_rating_before = Column(Float, nullable=False)
+    ts_volatility_before = Column(Float, nullable=False)
+    ts_rating_after = Column(Float, default=0.0)
+    ts_volatility_after = Column(Float, default=TS_MAX_SIGMA)
     
     game = relationship("Game", back_populates="game_players")
     player = relationship("Player", back_populates="game_players")
@@ -121,7 +143,6 @@ class PlayerGameTypeStats(Base):
     created_at = Column(DateTime, default=GLOBAL_START_TIME)
     game_type = Column(String(50), nullable=False)
 
-    true_rating = Column(Float, default=0.0)
     total_games_played = Column(Integer, default=0)
 
     total_kills = Column(Integer, default=0)
@@ -147,7 +168,7 @@ class PlayerGameTypeStats(Base):
     total_damage_taken_per_minute = Column(Float, default=0.0)
     best_killstreak = Column(Integer, default=0)
 
-    last_time_played = Column(DateTime, default=None)
+    last_time_played = Column(DateTime, default=(GLOBAL_START_TIME - ONE_YEAR))
     total_wins = Column(Integer, default=0)
     total_loses = Column(Integer, default=0)
     total_ties = Column(Integer, default=0)
@@ -177,5 +198,20 @@ class PlayerGameTypeStats(Base):
     avg_assists_per_minute = Column(Float, default=0.0)
     avg_damage_dealt_per_minute = Column(Float, default=0.0)
     avg_damage_taken_per_minute = Column(Float, default=0.0)
+
+    # Simulation rating
+    true_rating = Column(Float, default=0.0)
+
+    # Elo rating
+    elo_rating = Column(Float, default=0.0)
+
+    # Glicko‑2 rating
+    glicko_rating = Column(Float, default=0.0)
+    glicko_rd = Column(Float, default=GLICKO_MAX_RD)
+    glicko_volatility = Column(Float, default=0.06)
+
+    # TrueSkill rating
+    ts_rating = Column(Float, default=0.0)
+    ts_volatility = Column(Float, default=TS_MAX_SIGMA)
 
     player = relationship("Player", back_populates="game_type_stats")

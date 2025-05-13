@@ -1,10 +1,12 @@
 import math
 import random
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Tuple
 
-from sqlalchemy import asc, func, or_
+import trueskill
+
+from sqlalchemy import func, or_
 from ..database.db_setup import engine, SessionLocal
 from ..database.models import Base, Game, GamePlayer, Player, PlayerGameTypeStats
 from ..config import (
@@ -12,8 +14,14 @@ from ..config import (
     GAME_GAP,
     ONE_WEEK,
     ONE_YEAR,
+    STAT_ATTRS,
     GAME_TYPES,
     HALF_MINUTE,
+    ELO_K_FACTOR,
+    TS_MIN_SIGMA,
+    TS_MAX_SIGMA,
+    GLICKO_MIN_RD,
+    GLICKO_MAX_RD,
     RANK_AVERAGES,
     TOTAL_PLAYERS,
     TOTAL_ATTRIBUTES,
@@ -23,23 +31,21 @@ from ..config import (
     REF_INITIAL_TRUE_RATING,
     SCENARIO_PLAYER_PARTIES,
     RANK_DISTRIBUTION_WEIGHTS,
+    ZeroFloorElo,
+    ZeroFloorGlicko2,
     ensure_utc,
     get_stat_parameters
 )
 
-# Set random seed for reproducibility
-random.seed(42)
+random.seed(42) # Set random seed for reproducing the same randomness in stats and ranks
 
-# Setup logging
+# Logging for debugging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Setup SQLAlchemy engine and session (e.g., using SQLite)
-session = SessionLocal()
+session = SessionLocal() # Setup SQLAlchemy engine and session for creating records
 
-# Create tables (if not exist)
-Base.metadata.create_all(engine)
-
+Base.metadata.create_all(engine) # Creates tables, if none exist
 
 """
 Simulate the passage of time for a game.
@@ -52,7 +58,7 @@ def simulate_game_time(prev_time: datetime, game_type: GameMode) -> Tuple[dateti
     return new_time, playtime
 
 
-def compute_basic_stats(game_type: GameMode, rank_avg_stats: dict, playtime: int) -> Dict[str, Any]:
+def compute_game_player_stats(game_type: GameMode, rank_avg_stats: dict, playtime: int) -> Dict[str, Any]:
     # Random Gausian values based on averages for rank
     accuracy = max(random.gauss((rank_avg_stats["mean_accuracy"]), (rank_avg_stats["sd_accuracy"])), 0.0)
     
@@ -96,9 +102,9 @@ def compute_basic_stats(game_type: GameMode, rank_avg_stats: dict, playtime: int
 
     longest_time_alive = 0
     if game_type.type in ['BR_1V99', 'BR_4V96']:
-        longest_time_alive = max(int(random.randrange(rank_avg_stats["mean_longest_time_alive"] - rank_avg_stats["sd_longest_time_alive"], playtime + 1, 1)), 20)
+        longest_time_alive = max(int(random.randrange(int(rank_avg_stats["mean_longest_time_alive"]) - int(rank_avg_stats["sd_longest_time_alive"]), playtime + 1, 1)), 20)
     elif game_type.type == 'SAD':
-        longest_time_alive = max(int(random.randrange(rank_avg_stats["mean_longest_time_alive"] - rank_avg_stats["sd_longest_time_alive"], int(playtime / 30) + 101, 1)), 20)
+        longest_time_alive = max(int(random.randrange(int(rank_avg_stats["mean_longest_time_alive"]) - int(rank_avg_stats["sd_longest_time_alive"]), int(playtime / 30) + 101, 1)), 20)
     else:
         longest_time_alive = max(int(random.gauss(rank_avg_stats["mean_longest_time_alive"], rank_avg_stats["sd_longest_time_alive"])), 10)
 
@@ -139,7 +145,7 @@ def compute_basic_stats(game_type: GameMode, rank_avg_stats: dict, playtime: int
     }
 
 
-def compute_remaining_stats(game_player: GamePlayer, playtime: int, is_mvp: bool, is_lvp: bool) -> Dict[str, Any]:
+def compute_remaining_game_player_stats(game_player: GamePlayer, playtime: int, is_mvp: bool, is_lvp: bool) -> Dict[str, Any]:
     damage_missed = int((game_player.damage_dealt / game_player.accuracy) - game_player.damage_dealt) if game_player.accuracy else 0
 
     total_damage = damage_missed + game_player.damage_dealt
@@ -181,6 +187,10 @@ def compute_remaining_stats(game_player: GamePlayer, playtime: int, is_mvp: bool
     is_tie = game_player.is_tie
 
     true_rating_after_game = 0.0
+    elo_after = 0.0
+    glicko_rating_after = 0.0
+    glicko_rd_after = GLICKO_MAX_RD
+    glicko_volatility_after = 0.06
 
     return {
         "damage_missed": damage_missed,
@@ -219,91 +229,89 @@ def compute_remaining_stats(game_player: GamePlayer, playtime: int, is_mvp: bool
         "killstreak": killstreak,
         "team_placement": team_placement,
         "is_tie": is_tie,
+
         "true_rating_after_game": true_rating_after_game,
+        "elo_after": elo_after,
+        "glicko_rating_after": glicko_rating_after,
+        "glicko_rd_after": glicko_rd_after,
+        "glicko_volatility_after": glicko_volatility_after,
     }
 
-def calculate_ranking(game_type: GameMode, game_player: GamePlayer, player_stats: PlayerGameTypeStats, player_average_stats: dict) -> int:
-    # ref_player_rating_coef = 1 if game_player.player_id > 40 else RATING_COEFICIENT
-    ref_player_rating_coef = 1
-
+def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer, player_stats: PlayerGameTypeStats, player_average_stats: dict, team_elo, team_glicko, game_players_to_insert) -> int:
     total_avg_deltas = {}
 
     for (attr, koef) in TOTAL_ATTRIBUTES:
-        rating_coeficient = ref_player_rating_coef ** -1 if koef < 0 else ref_player_rating_coef
-
         if getattr(player_stats, f"avg_{attr}") > 0:
-            total_avg_deltas[f"delta_{attr}"] = koef * game_type.rank_delta_weights[attr] * ((rating_coeficient * getattr(game_player, attr)) - getattr(player_stats, f"avg_{attr}")) / getattr(player_stats, f"avg_{attr}")
+            total_avg_deltas[f"delta_{attr}"] = koef * game_type.rank_delta_weights[attr] * (getattr(game_player, attr) - getattr(player_stats, f"avg_{attr}")) / getattr(player_stats, f"avg_{attr}")
         else:
-            total_avg_deltas[f"delta_{attr}"] = koef * game_type.rank_delta_weights[attr] * rating_coeficient * 1.0 if getattr(game_player, attr) > 0.0 else 0.0  # if avg is zero, treat any positive performance as +1 and zero as 0
+            total_avg_deltas[f"delta_{attr}"] = koef * game_type.rank_delta_weights[attr] * 1.0 if getattr(game_player, attr) > 0.0 else 0.0
 
     if player_stats.best_killstreak > 0:
-        total_avg_deltas["delta_killstreak"] = game_type.rank_delta_weights["killstreak"] * ((ref_player_rating_coef * game_player.killstreak) - player_stats.best_killstreak) / player_stats.best_killstreak
+        total_avg_deltas["delta_killstreak"] = game_type.rank_delta_weights["killstreak"] * (game_player.killstreak - player_stats.best_killstreak) / player_stats.best_killstreak
     else:
-        total_avg_deltas["delta_killstreak"] = game_type.rank_delta_weights["killstreak"] * ref_player_rating_coef * 1.0 if game_player.killstreak > 0 else 0.0
+        total_avg_deltas["delta_killstreak"] = game_type.rank_delta_weights["killstreak"] * 1.0 if game_player.killstreak > 0 else 0.0
    
     if player_stats.total_kill_death_ratio > 0:
-        total_avg_deltas["delta_kill_death_ratio"] = game_type.rank_delta_weights["kill_death_ratio"] * ((ref_player_rating_coef * game_player.kill_death_ratio) - player_stats.total_kill_death_ratio) / player_stats.total_kill_death_ratio
+        total_avg_deltas["delta_kill_death_ratio"] = game_type.rank_delta_weights["kill_death_ratio"] * (game_player.kill_death_ratio - player_stats.total_kill_death_ratio) / player_stats.total_kill_death_ratio
     else:
-        total_avg_deltas["delta_kill_death_ratio"] = game_type.rank_delta_weights["kill_death_ratio"] * ref_player_rating_coef * 1.0 if game_player.kill_death_ratio > 0.0 else 0.0
+        total_avg_deltas["delta_kill_death_ratio"] = game_type.rank_delta_weights["kill_death_ratio"] * 1.0 if game_player.kill_death_ratio > 0.0 else 0.0
 
     if player_stats.total_damage_dealt_and_taken_ratio > 0:
-        total_avg_deltas["delta_damage_dealt_and_taken_ratio"] = game_type.rank_delta_weights["damage_dealt_and_taken_ratio"] * ((ref_player_rating_coef * game_player.damage_dealt_and_taken_ratio) - player_stats.total_damage_dealt_and_taken_ratio) / player_stats.total_damage_dealt_and_taken_ratio
+        total_avg_deltas["delta_damage_dealt_and_taken_ratio"] = game_type.rank_delta_weights["damage_dealt_and_taken_ratio"] * (game_player.damage_dealt_and_taken_ratio - player_stats.total_damage_dealt_and_taken_ratio) / player_stats.total_damage_dealt_and_taken_ratio
     else:
-        total_avg_deltas["delta_damage_dealt_and_taken_ratio"] = game_type.rank_delta_weights["damage_dealt_and_taken_ratio"] * ref_player_rating_coef * 1.0 if game_player.damage_dealt_and_taken_ratio > 0.0 else 0.0
+        total_avg_deltas["delta_damage_dealt_and_taken_ratio"] = game_type.rank_delta_weights["damage_dealt_and_taken_ratio"] * 1.0 if game_player.damage_dealt_and_taken_ratio > 0.0 else 0.0
 
     rank_avg_deltas = {}
 
     for (attr, koef) in RANK_AVERAGES:
-        rating_coeficient = ref_player_rating_coef ** -1 if koef < 0 else ref_player_rating_coef
-
         if player_stats.total_games_played == 0:
             rank_avg_deltas[f"delta_{attr}"] = 0.0
         elif player_average_stats[f"mean_{attr}"] > 0:
-            rank_avg_deltas[f"delta_{attr}"] = koef * game_type.rank_delta_weights[attr] * ((rating_coeficient * getattr(game_player, attr)) - player_average_stats[f"mean_{attr}"]) / player_average_stats[f"mean_{attr}"]
+            rank_avg_deltas[f"delta_{attr}"] = koef * game_type.rank_delta_weights[attr] * (getattr(game_player, attr) - player_average_stats[f"mean_{attr}"]) / player_average_stats[f"mean_{attr}"]
         else:
-            rank_avg_deltas[f"delta_{attr}"] = koef * game_type.rank_delta_weights[attr] * rating_coeficient * 1.0 if getattr(game_player, attr) > 0.0 else 0.0
+            rank_avg_deltas[f"delta_{attr}"] = koef * game_type.rank_delta_weights[attr] * 1.0 if getattr(game_player, attr) > 0.0 else 0.0
 
     if player_stats.total_games_played == 0:
         rank_avg_deltas["delta_killstreak"] = 0.0
     elif player_average_stats["mean_best_killstreak"] > 0:
-        rank_avg_deltas["delta_killstreak"] = game_type.rank_delta_weights["killstreak"] * ((ref_player_rating_coef * game_player.killstreak) - player_average_stats["mean_best_killstreak"]) / player_average_stats["mean_best_killstreak"]
+        rank_avg_deltas["delta_killstreak"] = game_type.rank_delta_weights["killstreak"] * (game_player.killstreak - player_average_stats["mean_best_killstreak"]) / player_average_stats["mean_best_killstreak"]
     else:
-        rank_avg_deltas["delta_killstreak"] = game_type.rank_delta_weights["killstreak"] * ref_player_rating_coef * 1.0 if game_player.killstreak > 0 else 0.0
+        rank_avg_deltas["delta_killstreak"] = game_type.rank_delta_weights["killstreak"] * 1.0 if game_player.killstreak > 0 else 0.0
 
     if player_stats.total_games_played == 0:
         rank_avg_deltas["delta_win_streak"] = 0.0
     elif player_average_stats["mean_win_streak"] > 0:
-        rank_avg_deltas["delta_win_streak"] = game_type.rank_delta_weights["win_streak"] * ((ref_player_rating_coef * player_stats.win_streak) - player_average_stats["mean_win_streak"]) / player_average_stats["mean_win_streak"]
+        rank_avg_deltas["delta_win_streak"] = game_type.rank_delta_weights["win_streak"] * (player_stats.win_streak - player_average_stats["mean_win_streak"]) / player_average_stats["mean_win_streak"]
     else:
-        rank_avg_deltas["delta_win_streak"] = game_type.rank_delta_weights["win_streak"] * ref_player_rating_coef * 1.0 if player_stats.win_streak > 0 else 0.0
+        rank_avg_deltas["delta_win_streak"] = game_type.rank_delta_weights["win_streak"] * 1.0 if player_stats.win_streak > 0 else 0.0
 
     other_deltas = {}
 
-    other_deltas["delta_win_loss_ratio"] = game_type.rank_delta_weights["win_loss_ratio"] * ((ref_player_rating_coef * player_stats.win_loss_ratio) - 0.5) / 0.5 if player_stats.total_games_played > 0 else 0.0
+    other_deltas["delta_win_loss_ratio"] = game_type.rank_delta_weights["win_loss_ratio"] * (player_stats.win_loss_ratio - 0.5) / 0.5 if player_stats.total_games_played > 0 else 0.0
 
     mid = (game_type.team_count + 1) / 2
     range_from_mid   = (game_type.team_count - 1) / 2
 
-    if range_from_mid == 0: # if there is ever a case, where team_count = 1, this guards against division by zero
+    if range_from_mid == 0:
         other_deltas["delta_placement"] = 0
     else:
         other_deltas["delta_placement"] = (mid - game_player.team_placement) / range_from_mid
 
-    other_deltas["delta_tie"] = (ref_player_rating_coef ** -1) * game_type.rank_delta_weights["is_tie"] * -0.5 if game_player.is_tie is True else ref_player_rating_coef * game_type.rank_delta_weights["is_tie"] * 0.5
+    other_deltas["delta_tie"] = game_type.rank_delta_weights["is_tie"] * -0.5 if game_player.is_tie is True else game_type.rank_delta_weights["is_tie"] * 0.5
 
-    other_deltas["delta_is_most_valuable_player"] = ref_player_rating_coef * int(game_player.is_most_valuable_player is True) * 1.5
+    other_deltas["delta_is_most_valuable_player"] = int(game_player.is_most_valuable_player is True) * 1.5
 
-    other_deltas["delta_is_least_valuable_player"] = (ref_player_rating_coef ** -1) * int(game_player.is_least_valuable_player is True) * -2.0
+    other_deltas["delta_is_least_valuable_player"] = int(game_player.is_least_valuable_player is True) * -2.0
 
-    perf_total   = 0.28 * sum(total_avg_deltas.values()) / len(total_avg_deltas)
-    perf_rating  = 0.32 * sum(rank_avg_deltas.values()) / len(rank_avg_deltas)
-    perf_other   = 0.40 * sum(other_deltas.values()) / len(other_deltas)
+    total_avg_weight = 0.28 * sum(total_avg_deltas.values()) / len(total_avg_deltas)
+    rank_avg_weight = 0.32 * sum(rank_avg_deltas.values()) / len(rank_avg_deltas)
+    other_metric_weight = 0.40 * sum(other_deltas.values()) / len(other_deltas)
 
-    ss = perf_total + perf_rating + perf_other
+    performance_weight = total_avg_weight + rank_avg_weight + other_metric_weight
 
-    last_playtime = ensure_utc(player_stats.last_time_played) if player_stats.last_time_played is not None else (ensure_utc(game_player.created_at) - ONE_YEAR)
+    utc_created_at = ensure_utc(game_player.created_at)
     
-    uncertainty_duration = (ensure_utc(game_player.created_at) - last_playtime).total_seconds() # Need to get seconds. Lower impact of this the higher rank you are and the more games played
+    uncertainty_duration = (utc_created_at - ensure_utc(player_stats.last_time_played)).total_seconds()
 
     TWO_WEEKS = 1209600 # in seconds
 
@@ -313,16 +321,88 @@ def calculate_ranking(game_type: GameMode, game_player: GamePlayer, player_stats
 
     rating_koef = math.exp(-0.00025 * game_player.true_rating_before_game)
 
-    kk = game_type.base_k * (max((1.5 - uncertainty_koef) * ((gameplay_koef + rating_koef) / 2), 0.3)) # Decay goes from 0.5 to 1.5 for new players and falls to 0.3 constant, if player is experienced or has played for a long time.
+    base_p = game_type.base_performance * (max((1.5 - uncertainty_koef) * ((gameplay_koef + rating_koef) / 2), 0.3)) # Decay goes from 0.5 to 1.5 for new players and falls to 0.3 constant, if player is experienced or has played for a long time.
 
-    true_rating_after_game = max(game_player.true_rating_before_game + (kk * ss), 0.0)
+    true_rating_after_game = max(game_player.true_rating_before_game + (base_p * performance_weight), 0.0)
 
-    return true_rating_after_game
+    final_elo = 0.0
+    final_glicko_rating = 0.0
+    final_glicko_rd = 0.0
+    final_glicko_volatility = 0.0
+
+    tied_against = 0
+    won_against = 0
+    lost_against = 0
+    
+    for team_index in range(game_type.team_count):
+        if game_player.team == f"Team_{team_index + 1}":
+            continue
+        else:
+            gp_elo_rating = team_elo[game_player.team]['initial_rating']
+            opp_elo_rating = team_elo[f"Team_{team_index + 1}"]['initial_rating']
+            gp_glicko_rating = team_glicko[game_player.team]['initial_rating']
+            opp_glicko_rating = team_glicko[f"Team_{team_index + 1}"]['initial_rating']
+
+            gp = ZeroFloorElo(initial_rating=gp_elo_rating if gp_elo_rating > 0 else 0, k_factor=team_elo[game_player.team]['k_factor'])
+            opp = ZeroFloorElo(initial_rating=opp_elo_rating if opp_elo_rating > 0 else 0, k_factor=team_elo[f"Team_{team_index + 1}"]['k_factor'])
+            
+            opp_placement = next(p.team_placement for p in game_players_to_insert if p.team == f"Team_{team_index + 1}")
+            
+            if game_player.team_placement < opp_placement:
+                gp.beat(opp)
+                won_against += 1
+            elif game_player.team_placement == opp_placement:
+                gp.tied(opp)
+                tied_against += 1
+            elif game_player.team_placement > opp_placement:
+                opp.beat(gp)
+                lost_against += 1
+
+            final_elo += gp.rating
+
+            gp = ZeroFloorGlicko2(
+                initial_rating=gp_glicko_rating if gp_glicko_rating > 0 else 0,
+                initial_rd=team_glicko[game_player.team]['initial_rd'],
+                initial_time=team_glicko[game_player.team]['initial_time'],
+                initial_volatility=team_glicko[game_player.team]['initial_volatility'],
+            )
+            opp = ZeroFloorGlicko2(
+                initial_rating=opp_glicko_rating if opp_glicko_rating > 0 else 0,
+                initial_rd=team_glicko[f"Team_{team_index + 1}"]['initial_rd'],
+                initial_time=team_glicko[f"Team_{team_index + 1}"]['initial_time'],
+                initial_volatility=team_glicko[f"Team_{team_index + 1}"]['initial_volatility'],
+            )
+
+            # if (team_glicko[game_player.team]['initial_time'] - utc_created_at).total_seconds() > 0:
+            #     raise RuntimeError(
+            #         f"utc_created_at: {utc_created_at}"
+            #         f"initial_time: {team_glicko[game_player.team]['initial_time']}"
+            #     )
+
+            if game_player.team_placement < opp_placement:
+                gp.beat(opp, utc_created_at)
+            elif game_player.team_placement == opp_placement:
+                gp.tied(opp, utc_created_at)
+            elif game_player.team_placement > opp_placement:
+                opp.beat(gp, utc_created_at)
+            
+            final_glicko_rating += gp.rating
+            final_glicko_rd += gp.rd
+            final_glicko_volatility += gp.volatility
+
+    divider = abs(won_against + tied_against - lost_against)
+    
+    final_elo = final_elo / divider if divider != 0 else final_elo
+    final_glicko_rating = final_glicko_rating / divider if divider != 0 else final_glicko_rating
+    final_glicko_rd = final_glicko_rd / divider if divider != 0 else final_glicko_rd
+    final_glicko_volatility = final_glicko_volatility / divider if divider != 0 else final_glicko_volatility
+    
+    return true_rating_after_game, final_elo, final_glicko_rating, final_glicko_rd, final_glicko_volatility
 
 """
 Update aggregated player stats based on the results of a game.
 """
-def update_player_stats(player_stats: PlayerGameTypeStats, game_player: GamePlayer) -> None:
+def update_player_game_type_stats(player_stats: PlayerGameTypeStats, game_player: GamePlayer) -> None:
     player_stats.total_kills += game_player.kills
     player_stats.total_deaths += game_player.deaths
     player_stats.total_assists += game_player.assists
@@ -342,11 +422,18 @@ def update_player_stats(player_stats: PlayerGameTypeStats, game_player: GamePlay
         player_stats.total_ties += 1
 
     created_at = ensure_utc(game_player.created_at)
-    starter_last_time_played = created_at - ONE_YEAR
 
     # Decay lowers by a week after each game and doesn't go further than a year ago.
-    player_stats.last_time_played = min(created_at, max(starter_last_time_played, ensure_utc(player_stats.last_time_played) + ONE_WEEK)) if player_stats.last_time_played is not None else starter_last_time_played + ONE_WEEK
+    player_stats.last_time_played = min(created_at, max(created_at - ONE_YEAR, ensure_utc(player_stats.last_time_played) + ONE_WEEK))
+
     player_stats.true_rating = game_player.true_rating_after_game
+    player_stats.elo_rating = game_player.elo_after
+    player_stats.glicko_rating = game_player.glicko_rating_after
+    player_stats.glicko_rd = game_player.glicko_rd_after
+    player_stats.glicko_volatility = game_player.glicko_volatility_after
+    player_stats.ts_rating = game_player.ts_rating_after
+    player_stats.ts_volatility = game_player.ts_volatility_after
+
     player_stats.total_headshot_damage_dealt += game_player.headshot_damage_dealt
     player_stats.total_torso_damage_dealt += game_player.torso_damage_dealt
     player_stats.total_leg_damage_dealt += game_player.leg_damage_dealt
@@ -400,7 +487,7 @@ def update_player_stats(player_stats: PlayerGameTypeStats, game_player: GamePlay
 """
 Compute initial stats for a player based on their rank and skill multiplier.
 """
-def compute_stats(game_type: GameMode, true_rating: float, rank_avg_stats: dict,) -> Dict[str, Any]:
+def compute_player_game_type_stats(game_type: GameMode, true_rating: float, rank_avg_stats: dict,) -> Dict[str, Any]:
     total_games_played = max(int(random.gauss(rank_avg_stats["mean_total_games_played"], rank_avg_stats["sd_total_games_played"])), 0)
     total_wins = max(int(random.gauss(rank_avg_stats["mean_total_wins"], rank_avg_stats["sd_total_wins"])), 0) if total_games_played > 0 else 0
     total_ties = max(int(random.gauss(rank_avg_stats["mean_total_ties"], rank_avg_stats["sd_total_ties"])), 0) if total_games_played > 0 else 0
@@ -431,8 +518,11 @@ def compute_stats(game_type: GameMode, true_rating: float, rank_avg_stats: dict,
         total_damage_taken += sum(int(max(random.gauss(100, 5), 0)) for _ in range(int(avg_deaths)))
  
     best_killstreak = 0
-    for _ in range(total_games_played):
-        best_killstreak = max(best_killstreak, min(int(max(random.gauss(rank_avg_stats["mean_best_killstreak"], rank_avg_stats["sd_best_killstreak"]), 0)), total_kills)) if total_kills > 0 else 0
+    if game_type.type in ['BR_1V99', 'BR_4V96']:
+        best_killstreak = total_kills
+    else:
+        for _ in range(total_games_played):
+            best_killstreak = max(best_killstreak, min(int(max(random.gauss(rank_avg_stats["mean_best_killstreak"], rank_avg_stats["sd_best_killstreak"]), 0)), total_kills)) if total_kills > 0 else 0
 
     total_headshot_accuracy = sum(max(random.gauss(rank_avg_stats["mean_headshot_accuracy"], rank_avg_stats["sd_headshot_accuracy"]), 0.0) for _ in range(total_games_played)) / (total_games_played) if total_games_played > 0 else 0.0
     total_torso_accuracy = sum(max(random.gauss(rank_avg_stats["mean_torso_accuracy"], rank_avg_stats["sd_torso_accuracy"]), 0.0) for _ in range(total_games_played)) / (total_games_played) if total_games_played > 0 else 0.0
@@ -489,8 +579,27 @@ def compute_stats(game_type: GameMode, true_rating: float, rank_avg_stats: dict,
     avg_damage_dealt_per_minute = total_damage_dealt_per_minute / total_games_played if total_games_played > 0 else 0.0
     avg_damage_taken_per_minute = total_damage_taken_per_minute / total_games_played if total_games_played > 0 else 0.0
 
+    elo_rating = true_rating
+    glicko_rating = true_rating
+    ts_rating = true_rating
+    glicko_volatility = 0.06
+
+    if total_games_played == 0:
+        glicko_rd = GLICKO_MAX_RD
+        ts_volatility = TS_MAX_SIGMA
+    else:
+        glicko_rd = max(GLICKO_MIN_RD,  GLICKO_MAX_RD / math.sqrt(total_games_played + 1))
+        ts_volatility = max(TS_MIN_SIGMA, TS_MAX_SIGMA / math.sqrt(total_games_played + 1))
+        
+
     return {
         "true_rating": true_rating,
+        "elo_rating": elo_rating,
+        "glicko_rating": glicko_rating,
+        "glicko_rd": glicko_rd,
+        "glicko_volatility": glicko_volatility,
+        "ts_rating": ts_rating,
+        "ts_volatility": ts_volatility,
 
         "total_games_played": total_games_played,
         "total_wins": total_wins,
@@ -568,13 +677,13 @@ def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[i
             interval_index = random.choices(range(len(RANK_DISTRIBUTION_WEIGHTS)), weights=RANK_DISTRIBUTION_WEIGHTS)[0]
             true_rating = random.randint(interval_index * 100, interval_index * 100 + 99) * 1.0
         player_stats = get_stat_parameters(game_type, true_rating)
-        computed_stats = compute_stats(game_type, true_rating, player_stats)
+        computed_stats = compute_player_game_type_stats(game_type, true_rating, player_stats)
 
         stats = PlayerGameTypeStats(
             player_id=player.id,
             created_at=GLOBAL_START_TIME,
             game_type=game_type.type,
-            last_time_played=GLOBAL_START_TIME if computed_stats['total_games_played'] > 0 else None,
+            last_time_played=GLOBAL_START_TIME if computed_stats['total_games_played'] > 0 else GLOBAL_START_TIME - ONE_YEAR,
             **computed_stats
         )
         stats_to_create.append(stats)
@@ -595,8 +704,6 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
         current_ref_player = session.query(Player).filter_by(id=ref_player_id).first()
         player_party = [current_ref_player]
         player_party_ids = [ref_player_id]
-
-
 
         if prev_player_party_name == current_ref_player.party_name: # Skip player, if he was already in games as a party member
             continue
@@ -623,14 +730,27 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
         current_time = GLOBAL_START_TIME
         game_number = 1
 
-        for (ref_rating_coeficient, ref_games_count, party_coeficient) in REF_COEF_AND_GAMES[f"player_{ref_player_id}"]:
+        for (ref_rating_coeficient, ref_games_count, party_coeficient, time_gap) in REF_COEF_AND_GAMES[f"player_{ref_player_id}"]:
+            gap_added = False
             for _ in range(ref_games_count):
+                
+                total_games = session.query(Game.id).count()
+                draw_games  = session.query(Game.id).join(GamePlayer).filter(GamePlayer.is_tie.is_(True)).distinct().count()
+
+                draw_prob = min(draw_games / total_games if total_games else 0.0, 0.5)
+
+                env = trueskill.TrueSkill(draw_probability=draw_prob)
+
                 game_players_to_insert = []
                 filter_time = current_time + HALF_MINUTE
 
                 player_stats = session.query(PlayerGameTypeStats).filter_by(
                     player_id=ref_player_id, game_type=game_type.type
                 ).first()
+
+                if not gap_added:
+                    player_stats.last_time_played -= timedelta(days=time_gap)
+                    gap_added = True
 
                 party_players_stats = session.query(PlayerGameTypeStats).filter(
                     PlayerGameTypeStats.game_type == game_type.type,
@@ -644,9 +764,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                                                               player_stats.true_rating + 50.0),
                     PlayerGameTypeStats.game_type == game_type.type,
                     PlayerGameTypeStats.player_id.notin_(exclude_ids),
-                    or_(PlayerGameTypeStats.last_time_played == None, PlayerGameTypeStats.last_time_played <= filter_time),
+                    or_(PlayerGameTypeStats.last_time_played <= filter_time),
                 ).order_by(
-                    # asc(func.abs(PlayerGameTypeStats.true_rating - player_stats.true_rating))
                     func.rand()
                 ).limit(player_count - len(player_party)).all()
 
@@ -656,7 +775,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                                                                   player_stats.true_rating + 100.0),
                         PlayerGameTypeStats.game_type == game_type.type,
                         PlayerGameTypeStats.player_id.notin_(exclude_ids),
-                        or_(PlayerGameTypeStats.last_time_played == None, PlayerGameTypeStats.last_time_played <= filter_time),
+                        or_(PlayerGameTypeStats.last_time_played <= filter_time),
                     ).order_by(
                         func.rand()
                     ).limit(player_count - len(player_party)).all()
@@ -678,7 +797,10 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
 
                 for ref_player in party_players_stats:
                     ref_stats = get_stat_parameters(game_type, ref_player.true_rating)
-                    ref_stats_calculated = compute_basic_stats(game_type, ref_stats, playtime)
+                    ref_stats_calculated = compute_game_player_stats(game_type, ref_stats, playtime)
+                    
+                    idle_days = (ensure_utc(current_time) - ensure_utc(ref_player.last_time_played)).days
+                    inflated_ts_volatility = math.sqrt(ref_player.ts_volatility**2 + (idle_days * env.tau)**2)
 
                     game_players_to_insert.append(
                         GamePlayer(
@@ -688,6 +810,12 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                             team="Team_1",
                             party_name=ref_player.player.party_name,
                             true_rating_before_game=ref_player.true_rating,
+                            elo_before=ref_player.elo_rating,
+                            glicko_rating_before=ref_player.glicko_rating,
+                            glicko_rd_before=ref_player.glicko_rd,
+                            glicko_volatility_before=ref_player.glicko_volatility,
+                            ts_rating_before=ref_player.ts_rating,
+                            ts_volatility_before=inflated_ts_volatility,
                             **ref_stats_calculated
                         )
                     )
@@ -701,13 +829,19 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     slots_to_fill = game_type.team_size - already_in_team
                     if team_player_index + slots_to_fill > len(game_players_stats):
                         raise RuntimeError(
+                            f"Game mode: {game_type.type}."
+                            f"Game #: {game_number}."
                             f"Asked for {slots_to_fill} players, but only "
                             f"{len(game_players_stats) - team_player_index} left."
                         )
                     for _ in range(slots_to_fill):
                         team_player = game_players_stats[team_player_index]
                         team_player_stats = get_stat_parameters(game_type, team_player.true_rating)
-                        team_player_stats_calculated = compute_basic_stats(game_type, team_player_stats, playtime)
+                        team_player_stats_calculated = compute_game_player_stats(game_type, team_player_stats, playtime)
+
+                        idle_days = (ensure_utc(current_time) - ensure_utc(team_player.last_time_played)).days
+                        inflated_ts_volatility = math.sqrt(team_player.ts_volatility**2 + (idle_days * env.tau)**2)
+
                         game_players_to_insert.append(
                             GamePlayer(
                                 created_at=current_time,
@@ -716,11 +850,43 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                                 team=team_name,
                                 party_name=team_player.player.party_name,
                                 true_rating_before_game=team_player.true_rating,
+                                elo_before=team_player.elo_rating,
+                                glicko_rating_before=team_player.glicko_rating,
+                                glicko_rd_before=team_player.glicko_rd,
+                                glicko_volatility_before=team_player.glicko_volatility,
+                                ts_rating_before=team_player.ts_rating,
+                                ts_volatility_before=inflated_ts_volatility,
                                 **team_player_stats_calculated
                             )
                         )
                         team_player_index += 1
                     team_number += 1
+
+                team_elo = {}
+                team_glicko = {}
+                players_stats = party_players_stats + game_players_stats
+
+                # if len(players_stats) > 0:
+                #     raise RuntimeError(
+                #         f"party_players_stats: {len(party_players_stats)}"
+                #         f"game_players_stats: {len(game_players_stats)}"
+                #     )
+
+                for team_index in range(game_type.team_count):
+                    
+                    team_elo[f"Team_{team_index + 1}"] = {
+                        "initial_rating": sum(p.elo_before for p in game_players_to_insert if p.team == f"Team_{team_index + 1}") / game_type.team_size,
+                        "k_factor": ELO_K_FACTOR,
+                    }
+
+                    total_time = sum(ensure_utc(p.last_time_played).timestamp() for p, gp in zip(players_stats, game_players_to_insert) if gp.team == f"Team_{team_index + 1}") / game_type.team_size
+                    
+                    team_glicko[f"Team_{team_index + 1}"] = {
+                        "initial_rating": sum(p.glicko_rating_before for p in game_players_to_insert if p.team == f"Team_{team_index + 1}") / game_type.team_size,
+                        "initial_rd": sum(p.glicko_rd_before for p in game_players_to_insert if p.team == f"Team_{team_index + 1}") / game_type.team_size,
+                        "initial_volatility": sum(p.glicko_volatility_before for p in game_players_to_insert if p.team == f"Team_{team_index + 1}") / game_type.team_size,
+                        "initial_time": datetime.fromtimestamp(total_time, tz=timezone.utc),
+                    }
 
                 for game_player in game_players_to_insert:
                     koef = 1.0
@@ -823,8 +989,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                         player.assists = int(player.assists * kills_koeficient)
                         player.killstreak = int(player.killstreak * kills_koeficient)
 
-                    all_player_kills = sum(player.kills for player in game_players_to_insert) # new kill values sum
-                    random_sorted_players = random.shuffle(game_players_to_insert)
+                    all_player_kills = sum(player.kills for player in game_players_to_insert)
+                    random_sorted_players = random.sample(game_players_to_insert, k=len(game_players_to_insert))
                     death_weights = [(all_player_kills - player.kills + 1) for player in random_sorted_players]
                     weight_sum = sum(death_weights)
 
@@ -1053,7 +1219,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                         elif team1_rounds_won < team2_rounds_won:
                             winning_team = "Team_2"
 
-                        for player in team2_players:
+                        for player in game_players_to_insert:
                             player.rounds_won = team1_rounds_won if player.team == "Team_1" else team2_rounds_won
                             player.rounds_lost = 30 - player.rounds_won
                             average_time_alive = playtime / player.deaths if player.deaths else playtime
@@ -1074,34 +1240,31 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                                 
                 
                 mvp_attributes = {
-                    'most_kills':            (max(game_players_to_insert, key=lambda p: p.kills).player_id, game_type.vp_weights[0]),
-                    'least_deaths':          (min(game_players_to_insert, key=lambda p: p.deaths).player_id, game_type.vp_weights[1]),
-                    'highest_killstreak':    (max(game_players_to_insert, key=lambda p: p.killstreak).player_id, game_type.vp_weights[2]),
-                    'longest_time_alive':    (max(game_players_to_insert, key=lambda p: p.longest_time_alive).player_id, game_type.vp_weights[3]),
-                    'most_contesting_kills': (max(game_players_to_insert, key=lambda p: p.contesting_kills).player_id, game_type.vp_weights[4]),
-                    'highest_objective_time':(max(game_players_to_insert, key=lambda p: p.objective_time).player_id, game_type.vp_weights[5]),
-                    'highest_accuracy':      (max(game_players_to_insert, key=lambda p: p.accuracy).player_id, game_type.vp_weights[6]),
-                    'highest_damage_dealt':  (max(game_players_to_insert, key=lambda p: p.damage_dealt).player_id, game_type.vp_weights[7]),
-                    'lowest_damage_taken':   (min(game_players_to_insert, key=lambda p: p.damage_taken).player_id, game_type.vp_weights[8]),
+                    'most_kills':            (max(game_players_to_insert, key=lambda p: p.kills).player_id, game_type.vp_weights['kills']),
+                    'least_deaths':          (min(game_players_to_insert, key=lambda p: p.deaths).player_id, game_type.vp_weights['deaths']),
+                    'highest_killstreak':    (max(game_players_to_insert, key=lambda p: p.killstreak).player_id, game_type.vp_weights['killstreak']),
+                    'longest_time_alive':    (max(game_players_to_insert, key=lambda p: p.longest_time_alive).player_id, game_type.vp_weights['time_alive']),
+                    'most_contesting_kills': (max(game_players_to_insert, key=lambda p: p.contesting_kills).player_id, game_type.vp_weights['contesting_kills']),
+                    'highest_objective_time':(max(game_players_to_insert, key=lambda p: p.objective_time).player_id, game_type.vp_weights['objective_time']),
+                    'highest_accuracy':      (max(game_players_to_insert, key=lambda p: p.accuracy).player_id, game_type.vp_weights['accuracy']),
+                    'highest_damage_dealt':  (max(game_players_to_insert, key=lambda p: p.damage_dealt).player_id, game_type.vp_weights['damage_dealt']),
+                    'lowest_damage_taken':   (min(game_players_to_insert, key=lambda p: p.damage_taken).player_id, game_type.vp_weights['damage_taken']),
                 }
 
                 lvp_attributes = {
-                    'least_kills':           (min(game_players_to_insert, key=lambda p: p.kills).player_id, game_type.vp_weights[0]),
-                    'most_deaths':           (max(game_players_to_insert, key=lambda p: p.deaths).player_id, game_type.vp_weights[1]),
-                    'lowest_killstreak':     (min(game_players_to_insert, key=lambda p: p.killstreak).player_id, game_type.vp_weights[2]),
-                    'shortest_time_alive':   (min(game_players_to_insert, key=lambda p: p.longest_time_alive).player_id, game_type.vp_weights[3]),
-                    'least_contesting_kills':(min(game_players_to_insert, key=lambda p: p.contesting_kills).player_id, game_type.vp_weights[4]),
-                    'lowest_objective_time': (min(game_players_to_insert, key=lambda p: p.objective_time).player_id, game_type.vp_weights[5]),
-                    'lowest_accuracy':       (min(game_players_to_insert, key=lambda p: p.accuracy).player_id, game_type.vp_weights[6]),
-                    'lowest_damage_dealt':   (min(game_players_to_insert, key=lambda p: p.damage_dealt).player_id, game_type.vp_weights[7]),
-                    'highest_damage_taken':  (max(game_players_to_insert, key=lambda p: p.damage_taken).player_id, game_type.vp_weights[8]),
+                    'least_kills':           (min(game_players_to_insert, key=lambda p: p.kills).player_id, game_type.vp_weights['kills']),
+                    'most_deaths':           (max(game_players_to_insert, key=lambda p: p.deaths).player_id, game_type.vp_weights['deaths']),
+                    'lowest_killstreak':     (min(game_players_to_insert, key=lambda p: p.killstreak).player_id, game_type.vp_weights['killstreak']),
+                    'shortest_time_alive':   (min(game_players_to_insert, key=lambda p: p.longest_time_alive).player_id, game_type.vp_weights['time_alive']),
+                    'least_contesting_kills':(min(game_players_to_insert, key=lambda p: p.contesting_kills).player_id, game_type.vp_weights['contesting_kills']),
+                    'lowest_objective_time': (min(game_players_to_insert, key=lambda p: p.objective_time).player_id, game_type.vp_weights['objective_time']),
+                    'lowest_accuracy':       (min(game_players_to_insert, key=lambda p: p.accuracy).player_id, game_type.vp_weights['accuracy']),
+                    'lowest_damage_dealt':   (min(game_players_to_insert, key=lambda p: p.damage_dealt).player_id, game_type.vp_weights['damage_dealt']),
+                    'highest_damage_taken':  (max(game_players_to_insert, key=lambda p: p.damage_taken).player_id, game_type.vp_weights['damage_taken']),
                 }
 
                 current_mvp = (0, 0.0)
                 current_lvp = (0, 0.0)
-
-                STAT_ATTRS = ['kills', 'deaths', 'killstreak', 'longest_time_alive',
-                    'contesting_kills', 'objective_time', 'accuracy', 'damage_dealt', 'damage_taken']
 
                 for player in game_players_to_insert:
                     mvp_weight_sum = sum(weight for (pid, weight) in mvp_attributes.values() if player.player_id == pid)
@@ -1150,6 +1313,31 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                         if better_stats_count > len(STAT_ATTRS) / 2:
                             current_lvp = (player.player_id, lvp_weight_sum)
 
+                ranks = []
+                teams_ratings = []
+                player_teams = []
+
+                for team_index in range(game_type.team_count):
+                    team_ratings = []
+                    team_players = []
+                    for p in game_players_to_insert:
+                        if p.team == f"Team_{team_index + 1}":
+                            team_ratings.append(env.Rating(mu=p.ts_rating_before, sigma = p.ts_volatility_before))
+                            team_players.append(p)
+
+                    ranks.append(team_players[0].team_placement - 1)
+
+                    player_teams.append(team_players)
+                    
+                    teams_ratings.append(team_ratings)
+
+                updated_ts_ratings = env.rate(teams_ratings, ranks)
+
+                for team_ratings, team_players in zip(updated_ts_ratings, player_teams):
+                    for rating, gp in zip(team_ratings, team_players):
+                        gp.ts_rating_after    = rating.mu
+                        gp.ts_volatility_after = rating.sigma
+
                 new_game_players_to_insert = []
                 for game_player in game_players_to_insert:
                     is_mvp = bool(game_player.player_id == current_mvp[0])
@@ -1158,7 +1346,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     game_player_game_type_stats = session.query(PlayerGameTypeStats).filter(
                         PlayerGameTypeStats.player_id == game_player.player_id,
                     ).first()
-                    player_stats_calculated = compute_remaining_stats(game_player, playtime, is_mvp, is_lvp)
+                    player_stats_calculated = compute_remaining_game_player_stats(game_player, playtime, is_mvp, is_lvp)
 
                     new_game_player = GamePlayer(
                         created_at=current_time,
@@ -1167,9 +1355,18 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                         team=game_player.team,
                         party_name=game_player.party_name,
                         true_rating_before_game=game_player.true_rating_before_game,
+                        elo_before=game_player.elo_before,
+                        glicko_rating_before=game_player.glicko_rating_before,
+                        glicko_rd_before=game_player.glicko_rd_before,
+                        glicko_volatility_before=game_player.glicko_volatility_before,
+                        ts_rating_before=game_player.ts_rating_before,
+                        ts_volatility_before=game_player.ts_volatility_before,
+                        ts_rating_after=game_player.ts_rating_after,
+                        ts_volatility_after=game_player.ts_volatility_after,
                         **player_stats_calculated
                     )
-                    new_game_player.true_rating_after_game = calculate_ranking(game_type, new_game_player, game_player_game_type_stats, player_stats)
+
+                    new_game_player.true_rating_after_game, new_game_player.elo_after, new_game_player.glicko_rating_after, new_game_player.glicko_rd_after, new_game_player.glicko_volatility_after = calculate_game_player_rating(game_type, new_game_player, game_player_game_type_stats, player_stats, team_elo, team_glicko, game_players_to_insert)
 
                     new_game_players_to_insert.append(new_game_player)
                 
@@ -1185,7 +1382,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int]) ->
                     p_stats = session.query(PlayerGameTypeStats).filter_by(
                         player_id=game_player.player_id, game_type=game_type.type
                     ).first()
-                    update_player_stats(p_stats, game_player)
+                    update_player_game_type_stats(p_stats, game_player)
                 session.commit()
                 logger.info(f"Player stats updated for game {game_number}.")
                 game_number += 1
@@ -1213,14 +1410,14 @@ def simulate_all_modes() -> None:
         session.commit()
         logger.info(f"Created {len(players_to_create)} players.")
 
-        for game_type in GAME_TYPES:
+        for game_type in [GAME_TYPES[0]]: # TODO: REVERT TO GAME_TYPES
             logger.info(f"Creating {game_type.type} stats for players")
             simulate_player_game_type_stats(game_type, ref_players_ids)
             logger.info(f"{game_type.type} stats for players finished!")
     else:
         logger.info("Players already created")
     
-    for game_type in GAME_TYPES:
+    for game_type in [GAME_TYPES[0]]: # TODO: REVERT TO GAME_TYPES
         logger.info(f"Starting simulation for game type: {game_type.type}")
         simulate_game_mode_games(game_type, ref_players_ids)
         logger.info(f"Completed simulation for game type: {game_type.type}")
