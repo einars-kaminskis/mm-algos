@@ -672,11 +672,16 @@ Initialize and simulate game type stats for all players.
 """
 def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[int]) -> None: 
     stats_to_create = []
+    interval_index = 0
+    player_id_countdown = int(TOTAL_PLAYERS * 0.027027) # Remove this if you want to use distributions
     for player in session.query(Player).all():
         if player.id in ref_players_ids:
             true_rating = REF_INITIAL_TRUE_RATING
         else:
-            interval_index = random.choices(range(len(RANK_DISTRIBUTION_WEIGHTS)), weights=RANK_DISTRIBUTION_WEIGHTS)[0]
+            if player_id_countdown == 0: # Remove this if you want to use distributions
+                interval_index += 1 # Remove this if you want to use distributions
+                player_id_countdown = int(TOTAL_PLAYERS * 0.027027) # Remove this if you want to use distributions
+            # interval_index = random.choices(range(len(RANK_DISTRIBUTION_WEIGHTS)), weights=RANK_DISTRIBUTION_WEIGHTS)[0] # Uncomment this, if you want to use distributions
             true_rating = random.randint(interval_index * 100, interval_index * 100 + 99) * 1.0
         player_stats = get_stat_parameters(game_type, true_rating)
         computed_stats = compute_player_game_type_stats(game_type, true_rating, player_stats)

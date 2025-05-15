@@ -13,14 +13,17 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   python -m venv .venv
   ```
 
-- Start virtual environment from ``bash`` or ``zsh`` terminal:
+- Start virtual environment from ``bash`` or ``zsh`` terminal on ``MacOS``:
   ```
   source .venv/bin/activate
   ```
-
   On ``Windows`` ``cmd``:
   ```
   .venv\Scripts\activate.bat
+  ```
+  On ``Windows`` ``bash``:
+  ```
+  . .venv/Scripts/activate
   ```
 
 - Check all the packages installed:

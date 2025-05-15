@@ -898,34 +898,46 @@ RANK_AVERAGES = [
     ('objective_time', 1),
   ]
 
+# If matchmaking testing and player sorting ever gets created, this is a 
+# rating distribution taken from Counter Strike 2 Premier games in 2025: https://csstats.gg/leaderboards
+# RANK_DISTRIBUTION_WEIGHTS = [
+#     0.0280, 0.0462, 0.0771, 0.0714, 0.0614, 0.0509, 0.0545, 0.0568,
+#     0.0630, 0.0585, 0.0551, 0.0546, 0.0510, 0.0508, 0.0424, 0.0356,
+#     0.0317, 0.0263, 0.0234, 0.0168, 0.0126, 0.0097, 0.0067, 0.0052,
+#     0.0037, 0.0028, 0.0014, 0.0005, 0.0003, 0.0002, 0.0002, 0.0002,
+#     0.0002, 0.0002, 0.0002, 0.0002, 0.0002
+# ]
+
+# This is better for testing, because we will look at many reference players
+# and they need players in their rating level to get games.
 RANK_DISTRIBUTION_WEIGHTS = [
-    0.0280, 0.0462, 0.0771, 0.0714, 0.0614, 0.0509, 0.0545, 0.0568,
-    0.0630, 0.0585, 0.0551, 0.0546, 0.0510, 0.0508, 0.0424, 0.0356,
-    0.0317, 0.0263, 0.0234, 0.0168, 0.0126, 0.0097, 0.0067, 0.0052,
-    0.0037, 0.0028, 0.0014, 0.0005, 0.0003, 0.0002, 0.0002, 0.0002,
-    0.0002, 0.0002, 0.0002, 0.0002, 0.0002
+    2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027,
+    2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027,
+    2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027,
+    2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027, 2.7027,
+    2.7027, 2.7027, 2.7027, 2.7027, 2.7027
 ]
 
-TOTAL_PLAYERS = 20000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
+TOTAL_PLAYERS = 30000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
 
 # Half and full team players with corresponding party names for each scenario
-# SCENARIO_PLAYER_PARTIES = [
-#     (range(5, 8), "linear_increase_decrease_half"),
-#     (range(8, 14), "linear_increase_decrease_full"),
-#     (range(14, 17), "increase_then_constant_half"),
-#     (range(17, 23), "increase_then_constant_full"),
-#     (range(23, 26), "skill_gap_half"),
-#     (range(26, 32), "skill_gap_full"),
-#     (range(32, 35), "huge_fall_then_jump_half"),
-#     (range(35, 41), "huge_fall_then_jump_full")
-# ]
-# For testing (TODO: DELETE)
 SCENARIO_PLAYER_PARTIES = [
-    (range(5, 11), "linear_increase_decrease_full"),
-    (range(11, 17), "increase_then_constant_full"),
-    (range(17, 23), "skill_gap_full"),
-    (range(23, 29), "huge_fall_then_jump_full")
+    (range(5, 8), "linear_increase_decrease_half"),
+    (range(8, 14), "linear_increase_decrease_full"),
+    (range(14, 17), "increase_then_constant_half"),
+    (range(17, 23), "increase_then_constant_full"),
+    (range(23, 26), "skill_gap_half"),
+    (range(26, 32), "skill_gap_full"),
+    (range(32, 35), "huge_fall_then_jump_half"),
+    (range(35, 41), "huge_fall_then_jump_full")
 ]
+# For testing (TODO: DELETE)
+# SCENARIO_PLAYER_PARTIES = [
+#     (range(5, 11), "linear_increase_decrease_full"),
+#     (range(11, 17), "increase_then_constant_full"),
+#     (range(17, 23), "skill_gap_full"),
+#     (range(23, 29), "huge_fall_then_jump_full")
+# ]
 
 
 # TESTED_RATING_COEFS = [0.85, 0.89, 0.91, 1.0, 1.3] (TODO: DELETE)
@@ -960,21 +972,37 @@ Scenarios:
 # }
 
 # Testing REF_COEF_AND_GAMES (TODO: DELETE)
+# REF_COEF_AND_GAMES = {
+#     "player_1": [(1.4, 300, 1.0, 0),(0.30, 300, 1.0, 0)],
+#     "player_2": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
+#     "player_3": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 180)],
+#     "player_4": [(1.4, 200, 1.0, 0), (0.40, 200, 1.0, 0), (1.7, 200, 1.0, 0)],
+
+#     "player_5": [(1.4, 300, 1.0, 0),(0.50, 300, 1.0, 0)],
+#     "player_11": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
+#     "player_17": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 180)],
+#     "player_23": [(1.4, 200, 1.0, 0), (0.40, 200, 1.0, 0), (1.7, 200, 1.0, 0)],
+
+#     "player_23": [(1.3, 200, 1.0, 0),(0.70, 200, 1.0, 0)],
+#     "player_26": [(1.3, 100, 1.0, 0), (0.91, 100, 1.0, 0)],
+#     "player_32": [(1.3, 50, 1.0, 0), (0.91, 50, 1.0, 0), (0.91, 100, 1.0, 180)],
+#     "player_35": [(1.3, 50, 1.0, 0), (0.62, 50, 1.0, 0), (1.7, 100, 1.0, 0)],
+# }
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.4, 400, 1.0, 0),(0.30, 400, 1.0, 0)],
+    "player_1": [(1.4, 300, 1.0, 0),(0.20, 300, 1.0, 0)],
     "player_2": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
-    "player_3": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 300, 1.0, 180)],
-    "player_4": [(1.4, 200, 1.0, 0), (0.40, 200, 1.0, 0), (1.7, 300, 1.0, 0)],
+    "player_3": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 365)],
+    "player_4": [(1.4, 200, 1.0, 0), (0.01, 200, 1.0, 0), (1.8, 200, 1.0, 0)],
 
-    "player_5": [(1.4, 600, 1.0, 0),(0.50, 600, 1.0, 0)],
-    "player_11": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
-    "player_17": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 300, 1.0, 180)],
-    "player_23": [(1.4, 200, 1.0, 0), (0.40, 200, 1.0, 0), (1.7, 300, 1.0, 0)],
+    "player_5": [(1.4, 300, 1.0, 0),(0.20, 300, 1.0, 0)],
+    "player_8": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
+    "player_14": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 365)],
+    "player_17": [(1.4, 200, 1.0, 0), (0.01, 200, 1.0, 0), (1.8, 200, 1.0, 0)],
 
-    # "player_23": [(1.3, 200, 1.0, 0),(0.70, 200, 1.0, 0)],
-    # "player_26": [(1.3, 100, 1.0, 0), (0.91, 100, 1.0, 0)],
-    # "player_32": [(1.3, 50, 1.0, 0), (0.91, 50, 1.0, 0), (0.91, 100, 1.0, 180)],
-    # "player_35": [(1.3, 50, 1.0, 0), (0.62, 50, 1.0, 0), (1.7, 100, 1.0, 0)],
+    "player_23": [(1.4, 300, 1.0, 0),(0.20, 300, 1.0, 0)],
+    "player_26": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
+    "player_32": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 365)],
+    "player_35": [(1.4, 200, 1.0, 0), (0.01, 200, 1.0, 0), (1.8, 200, 1.0, 0)],
 }
 
 # TDM games count = originally 300000, -> 1500 * 12
@@ -984,7 +1012,7 @@ REF_COEF_AND_GAMES = {
 # BR_4v96 games count = originally 300000, -> 1500 * 12
 # SAD games count = originally 300000, -> 1500 * 12
 REF_INITIAL_TRUE_RATING = 600
-REFERENCE_PLAYER_COUNT = 1 # For testing (TODO: CHANGE TO 40)
+REFERENCE_PLAYER_COUNT = 40 # For testing (TODO: CHANGE TO 40)
 
 # Time constants
 GLOBAL_START_TIME = datetime.now(timezone.utc) # Global start time for simulation
