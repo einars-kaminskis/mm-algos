@@ -32,7 +32,8 @@ from ..config import (
     REFERENCE_PLAYER_COUNT,
     REF_INITIAL_TRUE_RATING,
     SCENARIO_PLAYER_PARTIES,
-    RANK_DISTRIBUTION_WEIGHTS,
+    DISTRIBUTION,
+    # RANK_DISTRIBUTION_WEIGHTS, # Uncomment this, if you want to use distributions
     ZeroFloorElo,
     ZeroFloorGlicko2,
     ensure_utc,
@@ -673,14 +674,14 @@ Initialize and simulate game type stats for all players.
 def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[int]) -> None: 
     stats_to_create = []
     interval_index = 0
-    player_id_countdown = int(TOTAL_PLAYERS * 0.027027) # Remove this if you want to use distributions
+    player_id_countdown = int(TOTAL_PLAYERS * DISTRIBUTION) # Remove this if you want to use distributions
     for player in session.query(Player).all():
         if player.id in ref_players_ids:
             true_rating = REF_INITIAL_TRUE_RATING
         else:
             if player_id_countdown == 0: # Remove this if you want to use distributions
                 interval_index += 1 # Remove this if you want to use distributions
-                player_id_countdown = int(TOTAL_PLAYERS * 0.027027) # Remove this if you want to use distributions
+                player_id_countdown = int(TOTAL_PLAYERS * DISTRIBUTION) - 1 # Remove this if you want to use distributions
             # interval_index = random.choices(range(len(RANK_DISTRIBUTION_WEIGHTS)), weights=RANK_DISTRIBUTION_WEIGHTS)[0] # Uncomment this, if you want to use distributions
             true_rating = random.randint(interval_index * 100, interval_index * 100 + 99) * 1.0
         player_stats = get_stat_parameters(game_type, true_rating)
@@ -694,6 +695,7 @@ def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[i
             **computed_stats
         )
         stats_to_create.append(stats)
+        player_id_countdown -= 1
     session.add_all(stats_to_create)
     session.commit()
     logger.info("Created stats for all players.")
@@ -1409,14 +1411,14 @@ def simulate_all_modes() -> None:
         session.commit()
         logger.info(f"Created {len(players_to_create)} players.")
 
-        for game_type in [GAME_TYPES[0]]: # TODO: REVERT TO GAME_TYPES
+        for game_type in [GAME_TYPES[1], GAME_TYPES[2], GAME_TYPES[3], GAME_TYPES[4], GAME_TYPES[5]]: # TODO: REVERT TO GAME_TYPES
             logger.info(f"Creating {game_type.type} stats for players")
             simulate_player_game_type_stats(game_type, ref_players_ids)
             logger.info(f"{game_type.type} stats for players finished!")
     else:
         logger.info("Players already created")
     
-    for game_type in [GAME_TYPES[0]]: # TODO: REVERT TO GAME_TYPES
+    for game_type in [GAME_TYPES[1], GAME_TYPES[2], GAME_TYPES[3], GAME_TYPES[4], GAME_TYPES[5]]: # TODO: REVERT TO GAME_TYPES
         if game_type.type in ['BR_1V99', 'BR_4V96']:
             draw_probability = 0
         else:

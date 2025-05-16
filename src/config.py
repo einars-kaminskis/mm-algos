@@ -170,7 +170,7 @@ GAME_TYPES = [
         time_limit_mean = 600, # seconds or 10 minutes
         time_limit_variance = 120, # seconds or 2 minutes
         kill_cap = 50,
-        base_performance = 15.00,
+        base_performance = 20.00,
         vp_weights = {
           'kills': 1.00,
           'deaths': 0.95,
@@ -417,7 +417,7 @@ GAME_TYPES = [
         time_limit_mean = 1200, # seconds or 20 minutes
         time_limit_variance = 180, # seconds or 3 minutes
         kill_cap = 99,
-        base_performance = 25.00,
+        base_performance = 20.00,
         vp_weights = {
           'kills': 0.70,
           'deaths': 0.10,
@@ -540,7 +540,7 @@ GAME_TYPES = [
         time_limit_mean = 1380, # seconds or 23 minutes
         time_limit_variance = 240, # seconds or 4 minutes
         kill_cap = 96,
-        base_performance = 25.00,
+        base_performance = 20.00,
         vp_weights = {
           'kills': 0.70,
           'deaths': 0.10,
@@ -665,7 +665,7 @@ GAME_TYPES = [
         time_limit_variance = 240, # seconds or 4 minutes
         winning_round_limit = 16, # for each team to win
         kill_cap = 109, # Average between 83 kills and 136 kills
-        base_performance = 30.00,
+        base_performance = 20.00,
         vp_weights = {
           'kills': 0.88,
           'deaths': 0.90,
@@ -918,7 +918,10 @@ RANK_DISTRIBUTION_WEIGHTS = [
     2.7027, 2.7027, 2.7027, 2.7027, 2.7027
 ]
 
-TOTAL_PLAYERS = 30000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
+# DISTRIBUTION = 0.027027
+DISTRIBUTION = 0.0416667
+
+TOTAL_PLAYERS = 50000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
 
 # Half and full team players with corresponding party names for each scenario
 SCENARIO_PLAYER_PARTIES = [
@@ -972,37 +975,21 @@ Scenarios:
 # }
 
 # Testing REF_COEF_AND_GAMES (TODO: DELETE)
-# REF_COEF_AND_GAMES = {
-#     "player_1": [(1.4, 300, 1.0, 0),(0.30, 300, 1.0, 0)],
-#     "player_2": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
-#     "player_3": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 180)],
-#     "player_4": [(1.4, 200, 1.0, 0), (0.40, 200, 1.0, 0), (1.7, 200, 1.0, 0)],
-
-#     "player_5": [(1.4, 300, 1.0, 0),(0.50, 300, 1.0, 0)],
-#     "player_11": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
-#     "player_17": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 180)],
-#     "player_23": [(1.4, 200, 1.0, 0), (0.40, 200, 1.0, 0), (1.7, 200, 1.0, 0)],
-
-#     "player_23": [(1.3, 200, 1.0, 0),(0.70, 200, 1.0, 0)],
-#     "player_26": [(1.3, 100, 1.0, 0), (0.91, 100, 1.0, 0)],
-#     "player_32": [(1.3, 50, 1.0, 0), (0.91, 50, 1.0, 0), (0.91, 100, 1.0, 180)],
-#     "player_35": [(1.3, 50, 1.0, 0), (0.62, 50, 1.0, 0), (1.7, 100, 1.0, 0)],
-# }
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.4, 300, 1.0, 0),(0.20, 300, 1.0, 0)],
-    "player_2": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
-    "player_3": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 365)],
-    "player_4": [(1.4, 200, 1.0, 0), (0.01, 200, 1.0, 0), (1.8, 200, 1.0, 0)],
+    "player_1": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
+    "player_2": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
+    "player_3": [(1.4, 100, 1.0, 0), (0.91, 100, 1.0, 0), (0.91, 100, 1.0, 365)],
+    "player_4": [(1.4, 100, 1.0, 0), (0.01, 100, 1.0, 0), (1.8, 100, 1.0, 0)],
 
-    "player_5": [(1.4, 300, 1.0, 0),(0.20, 300, 1.0, 0)],
-    "player_8": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
-    "player_14": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 365)],
-    "player_17": [(1.4, 200, 1.0, 0), (0.01, 200, 1.0, 0), (1.8, 200, 1.0, 0)],
+    "player_5": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
+    "player_8": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
+    "player_14": [(1.4, 100, 1.0, 0), (0.91, 100, 1.0, 0), (0.91, 100, 1.0, 365)],
+    "player_17": [(1.4, 100, 1.0, 0), (0.01, 100, 1.0, 0), (1.8, 100, 1.0, 0)],
 
-    "player_23": [(1.4, 300, 1.0, 0),(0.20, 300, 1.0, 0)],
-    "player_26": [(1.4, 300, 1.0, 0), (0.91, 300, 1.0, 0)],
-    "player_32": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0), (0.91, 200, 1.0, 365)],
-    "player_35": [(1.4, 200, 1.0, 0), (0.01, 200, 1.0, 0), (1.8, 200, 1.0, 0)],
+    "player_23": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
+    "player_26": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
+    "player_32": [(1.4, 100, 1.0, 0), (0.91, 100, 1.0, 0), (0.91, 100, 1.0, 365)],
+    "player_35": [(1.4, 100, 1.0, 0), (0.01, 100, 1.0, 0), (1.8, 100, 1.0, 0)],
 }
 
 # TDM games count = originally 300000, -> 1500 * 12
@@ -1011,6 +998,7 @@ REF_COEF_AND_GAMES = {
 # BR_1v99 games count = originally 100000, -> 500 * 12
 # BR_4v96 games count = originally 300000, -> 1500 * 12
 # SAD games count = originally 300000, -> 1500 * 12
+
 REF_INITIAL_TRUE_RATING = 600
 REFERENCE_PLAYER_COUNT = 40 # For testing (TODO: CHANGE TO 40)
 
