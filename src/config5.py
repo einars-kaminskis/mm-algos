@@ -291,7 +291,7 @@ GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 # Test algorithm constants
 GLICKO_MAX_RD = 350.0
 GLICKO_MIN_RD = 50.0
-MAX_RANK = 1300.0
+MAX_RANK = 3000.0
 TS_MAX_SIGMA = MAX_RANK / 6 # 6 standard deviations (3 to each side) should cover all the ranks
 TS_MIN_SIGMA = MAX_RANK / 60
 BASE_BETA = TS_MAX_SIGMA / 2
@@ -306,9 +306,9 @@ BASE_TAU = TS_MAX_SIGMA / 100
 
 ELO_K_FACTOR = 20
 
-TOTAL_PLAYERS = 10000
+TOTAL_PLAYERS = 20000
 
-DISTRIBUTION = int(TOTAL_PLAYERS / 20)
+DISTRIBUTION = int(TOTAL_PLAYERS / 30)
 
 SCENARIO_PLAYER_PARTIES = [
     (range(5, 8), "linear_increase_decrease_half"),
@@ -352,9 +352,9 @@ Scenarios:
 # }
 REF_COEF_AND_GAMES = {
     "player_1": [(1.6, 200, 1.0, 0),(0.8, 200, 1.0, 0)],
-    # "player_2": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
-    # "player_3": [(1.4, 133, 1.0, 0), (0.91, 133, 1.0, 0), (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30)],
-    # "player_4": [(1.4, 133, 1.0, 0), (0.01, 133, 1.0, 0), (1.8, 133, 1.0, 0)],
+    "player_2": [(1.6, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
+    "player_3": [(1.6, 133, 1.0, 0), (0.91, 133, 1.0, 0)] + [(0.91, 4, 1.0, 30) for _ in range(30)],
+    "player_4": [(1.6, 133, 1.0, 0), (0.2, 133, 1.0, 0), (1.99, 133, 1.0, 0)],
 
     # "player_5": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
     # "player_8": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
@@ -375,4 +375,4 @@ REF_COEF_AND_GAMES = {
 # SAD games count = originally 300000, -> 1500 * 12
 
 REF_INITIAL_TRUE_RATING = 600
-REFERENCE_PLAYER_COUNT = 1
+REFERENCE_PLAYER_COUNT = 4
