@@ -504,30 +504,30 @@ GAME_TYPES = [
             }
         },
         rank_delta_weights = {
-            "kills": 0.70,
+            "kills": 0.90,
             "deaths": 0.10,
-            "assists": 0.50,
-            "damage_dealt": 0.70,
-            "damage_taken": 0.50,
+            "assists": 0.80,
+            "damage_dealt": 0.90,
+            "damage_taken": 0.80,
             "damage_missed": 0.20,
-            "headshot_damage_dealt": 0.50,
-            "torso_damage_dealt": 0.35,
-            "leg_damage_dealt": 0.20,
+            "headshot_damage_dealt": 0.80,
+            "torso_damage_dealt": 0.60,
+            "leg_damage_dealt": 0.15,
             "accuracy": 0.60,
-            "headshot_accuracy": 0.50,
-            "torso_accuracy": 0.35,
-            "leg_accuracy": 0.20,
+            "headshot_accuracy": 0.80,
+            "torso_accuracy": 0.60,
+            "leg_accuracy": 0.15,
             "contesting_kills": 0.00,
             "objective_time": 0.00,
             "longest_time_alive": 1.00,
-            "kills_per_minute": 0.20,
+            "kills_per_minute": 0.50,
             "deaths_per_minute": 0.00,
-            "assists_per_minute": 0.10,
-            "damage_dealt_per_minute": 0.20,
-            "damage_taken_per_minute": 0.10,
+            "assists_per_minute": 0.40,
+            "damage_dealt_per_minute": 0.50,
+            "damage_taken_per_minute": 0.40,
             "kill_death_ratio": 0.00,
-            "damage_dealt_and_taken_ratio": 0.15,
-            "killstreak": 0.70,
+            "damage_dealt_and_taken_ratio": 0.45,
+            "killstreak": 0.90,
             "win_streak": 1.00,
             "win_loss_ratio": 1.00,
             "is_tie": 0.00
@@ -628,30 +628,30 @@ GAME_TYPES = [
             }
         },
         rank_delta_weights = {
-            "kills": 0.70,
+            "kills": 0.90,
             "deaths": 0.10,
-            "assists": 0.65,
-            "damage_dealt": 0.70,
-            "damage_taken": 0.50,
-            "damage_missed": 0.30,
-            "headshot_damage_dealt": 0.50,
-            "torso_damage_dealt": 0.32,
-            "leg_damage_dealt": 0.17,
+            "assists": 0.82,
+            "damage_dealt": 0.90,
+            "damage_taken": 0.80,
+            "damage_missed": 0.20,
+            "headshot_damage_dealt": 0.80,
+            "torso_damage_dealt": 0.60,
+            "leg_damage_dealt": 0.15,
             "accuracy": 0.60,
-            "headshot_accuracy": 0.50,
-            "torso_accuracy": 0.32,
-            "leg_accuracy": 0.17,
+            "headshot_accuracy": 0.80,
+            "torso_accuracy": 0.60,
+            "leg_accuracy": 0.15,
             "contesting_kills": 0.00,
             "objective_time": 0.00,
             "longest_time_alive": 1.00,
-            "kills_per_minute": 0.20,
+            "kills_per_minute": 0.50,
             "deaths_per_minute": 0.00,
-            "assists_per_minute": 0.15,
-            "damage_dealt_per_minute": 0.20,
-            "damage_taken_per_minute": 0.10,
+            "assists_per_minute": 0.42,
+            "damage_dealt_per_minute": 0.50,
+            "damage_taken_per_minute": 0.40,
             "kill_death_ratio": 0.00,
-            "damage_dealt_and_taken_ratio": 0.15,
-            "killstreak": 0.70,
+            "damage_dealt_and_taken_ratio": 0.45,
+            "killstreak": 0.90,
             "win_streak": 1.00,
             "win_loss_ratio": 1.00,
             "is_tie": 0.00
@@ -753,30 +753,30 @@ GAME_TYPES = [
             }
         },
         rank_delta_weights = {
-            "kills": 0.90,
-            "deaths": 0.90,
+            "kills": 0.95,
+            "deaths": 0.95,
             "assists": 0.45,
             "damage_dealt": 0.30,
             "damage_taken": 0.30,
-            "damage_missed": 0.40,
-            "headshot_damage_dealt": 0.40,
-            "torso_damage_dealt": 0.20,
+            "damage_missed": 0.60,
+            "headshot_damage_dealt": 0.85,
+            "torso_damage_dealt": 0.60,
             "leg_damage_dealt": 0.10,
-            "accuracy": 0.90,
-            "headshot_accuracy": 0.80,
-            "torso_accuracy": 0.40,
+            "accuracy": 0.95,
+            "headshot_accuracy": 0.85,
+            "torso_accuracy": 0.60,
             "leg_accuracy": 0.10,
             "contesting_kills": 0.00,
             "objective_time": 0.00,
             "longest_time_alive": 1.00,
-            "kills_per_minute": 0.70,
-            "deaths_per_minute": 0.70,
+            "kills_per_minute": 0.75,
+            "deaths_per_minute": 0.75,
             "assists_per_minute": 0.35,
             "damage_dealt_per_minute": 0.20,
             "damage_taken_per_minute": 0.20,
-            "kill_death_ratio": 0.80,
+            "kill_death_ratio": 0.85,
             "damage_dealt_and_taken_ratio": 0.30,
-            "killstreak": 0.85,
+            "killstreak": 0.90,
             "win_streak":1.00,
             "win_loss_ratio": 1.00,
             "is_tie": 1.00
@@ -846,6 +846,9 @@ def ensure_utc(dt: datetime) -> datetime:
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
+
+def roundInt(number) -> int:
+    return int(round(number, 0))
 
 # ------------------------
 # CONSTANTS
@@ -918,10 +921,9 @@ RANK_DISTRIBUTION_WEIGHTS = [
     2.7027, 2.7027, 2.7027, 2.7027, 2.7027
 ]
 
-# DISTRIBUTION = 0.027027
-DISTRIBUTION = 0.0416667
-
 TOTAL_PLAYERS = 50000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
+
+DISTRIBUTION = int(TOTAL_PLAYERS / 24)
 
 # Half and full team players with corresponding party names for each scenario
 SCENARIO_PLAYER_PARTIES = [
@@ -956,6 +958,8 @@ Scenarios:
 
 - linear increase for the first 1250 games, then a huge fall in rank for 1250 games,
   then a huge jump in rank for 2500 games;
+
+- Player is low rank and takes gap and a game, where player is high skill and takes gap.
 """
 # REF_COEF_AND_GAMES = {
 #     "player_1": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
@@ -1011,10 +1015,10 @@ HALF_MINUTE = timedelta(seconds=30)
 GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 
 # Test algorithm constants
-ELO_K_FACTOR = 32
+ELO_K_FACTOR = 20
 GLICKO_MAX_RD = 350.0
 GLICKO_MIN_RD = 50.0
-MAX_RANK = 3700.0
+MAX_RANK = 1300.0
 TS_MAX_SIGMA = MAX_RANK / 6 # 6 standard deviations (3 to each side) should cover all the ranks
 TS_MIN_SIGMA = MAX_RANK / 60
 BASE_BETA = TS_MAX_SIGMA / 2

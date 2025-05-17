@@ -8,8 +8,8 @@ import trueskill
 
 from sqlalchemy import func, or_
 from ..database.db_setup import engine, SessionLocal
-from ..database.models import Base, Game, GamePlayer, Player, PlayerGameTypeStats
-from ..config import (
+from ..database.models1 import Base, Game1, GamePlayer1, Player1, PlayerGameTypeStats1
+from ..config1 import (
     GameMode,
     GAME_GAP,
     ONE_WEEK,
@@ -157,7 +157,7 @@ def compute_game_player_stats(game_type: GameMode, rank_avg_stats: dict, playtim
     }
 
 
-def compute_remaining_game_player_stats(game_player: GamePlayer, playtime: int, is_mvp: bool, is_lvp: bool) -> Dict[str, Any]:
+def compute_remaining_game_player_stats(game_player: GamePlayer1, playtime: int, is_mvp: bool, is_lvp: bool) -> Dict[str, Any]:
     damage_missed = roundInt((game_player.damage_dealt / game_player.accuracy) - game_player.damage_dealt) if game_player.accuracy else 0
 
     total_damage = damage_missed + game_player.damage_dealt
@@ -249,7 +249,7 @@ def compute_remaining_game_player_stats(game_player: GamePlayer, playtime: int, 
         "glicko_volatility_after": glicko_volatility_after,
     }
 
-def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer, player_stats: PlayerGameTypeStats, player_average_stats: dict, team_elo, team_glicko, game_players_to_insert) -> int:
+def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer1, player_stats: PlayerGameTypeStats1, player_average_stats: dict, team_elo, team_glicko, game_players_to_insert) -> int:
     total_avg_deltas = {}
 
     for (attr, koef) in TOTAL_ATTRIBUTES:
@@ -439,7 +439,7 @@ def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer, p
 """
 Update aggregated player stats based on the results of a game.
 """
-def update_player_game_type_stats(player_stats: PlayerGameTypeStats, game_player: GamePlayer) -> None:
+def update_player_game_type_stats(player_stats: PlayerGameTypeStats1, game_player: GamePlayer1) -> None:
     player_stats.total_kills += game_player.kills
     player_stats.total_deaths += game_player.deaths
     player_stats.total_assists += game_player.assists
@@ -709,7 +709,7 @@ def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[i
     stats_to_create = []
     interval_index = 0
     player_id_countdown = DISTRIBUTION # Remove this if you want to use distributions
-    for player in session.query(Player).all():
+    for player in session.query(Player1).all():
         if player.id in ref_players_ids:
             true_rating = REF_INITIAL_TRUE_RATING
         else:
@@ -721,7 +721,7 @@ def simulate_player_game_type_stats(game_type: GameMode, ref_players_ids: List[i
         player_stats = get_stat_parameters(game_type, true_rating)
         computed_stats = compute_player_game_type_stats(game_type, true_rating, player_stats)
 
-        stats = PlayerGameTypeStats(
+        stats = PlayerGameTypeStats1(
             player_id=player.id,
             created_at=GLOBAL_START_TIME,
             game_type=game_type.type,
@@ -745,7 +745,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
     total_games_number = 1
     for ref_player_id in ref_players_ids: # This is how we test each scenario (every player is every scenario in every combination)
         # Retrieve player's party name and stats
-        current_ref_player = session.query(Player).filter_by(id=ref_player_id).first()
+        current_ref_player = session.query(Player1).filter_by(id=ref_player_id).first()
         player_party = [current_ref_player]
         player_party_ids = [ref_player_id]
 
@@ -762,12 +762,12 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
 
             if "half" in current_ref_player.party_name:
                 for _ in range(game_type.group_sizes[0] - 1):
-                    player_party.append(session.query(Player).filter_by(id=next_player_id).first())
+                    player_party.append(session.query(Player1).filter_by(id=next_player_id).first())
                     player_party_ids.append(next_player_id)
                     next_player_id += 1
             else:
                 for _ in range(game_type.group_sizes[1] - 1):
-                    player_party.append(session.query(Player).filter_by(id=next_player_id).first())
+                    player_party.append(session.query(Player1).filter_by(id=next_player_id).first())
                     player_party_ids.append(next_player_id)
                     next_player_id += 1
 
@@ -780,7 +780,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                 game_players_to_insert = []
                 filter_time = current_time + HALF_MINUTE
 
-                player_stats = session.query(PlayerGameTypeStats).filter_by(
+                player_stats = session.query(PlayerGameTypeStats1).filter_by(
                     player_id=ref_player_id, game_type=game_type.type
                 ).first()
 
@@ -788,39 +788,39 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     player_stats.last_time_played -= timedelta(days=time_gap)
                     gap_added = True
 
-                party_players_stats = session.query(PlayerGameTypeStats).filter(
-                    PlayerGameTypeStats.game_type == game_type.type,
-                    PlayerGameTypeStats.player_id.in_(player_party_ids),
+                party_players_stats = session.query(PlayerGameTypeStats1).filter(
+                    PlayerGameTypeStats1.game_type == game_type.type,
+                    PlayerGameTypeStats1.player_id.in_(player_party_ids),
                 ).all()
 
                 search_rating = sum(p.true_rating for p in party_players_stats) / len(party_players_stats)
 
                 exclude_ids = set(ref_players_ids) | set(player_party_ids)
                 
-                game_players_stats = session.query(PlayerGameTypeStats).filter(
-                    PlayerGameTypeStats.true_rating.between(search_rating - 50.0,
+                game_players_stats = session.query(PlayerGameTypeStats1).filter(
+                    PlayerGameTypeStats1.true_rating.between(search_rating - 50.0,
                                                               search_rating + 50.0),
-                    PlayerGameTypeStats.game_type == game_type.type,
-                    PlayerGameTypeStats.player_id.notin_(exclude_ids),
-                    or_(PlayerGameTypeStats.last_time_played <= filter_time),
+                    PlayerGameTypeStats1.game_type == game_type.type,
+                    PlayerGameTypeStats1.player_id.notin_(exclude_ids),
+                    or_(PlayerGameTypeStats1.last_time_played <= filter_time),
                 ).order_by(
                     func.rand()
                 ).limit(player_count - len(player_party)).all()
 
                 if len(game_players_stats) < (player_count - len(player_party)):
-                    game_players_stats = session.query(PlayerGameTypeStats).filter(
-                        PlayerGameTypeStats.true_rating.between(search_rating - 100.0,
+                    game_players_stats = session.query(PlayerGameTypeStats1).filter(
+                        PlayerGameTypeStats1.true_rating.between(search_rating - 100.0,
                                                                   search_rating + 100.0),
-                        PlayerGameTypeStats.game_type == game_type.type,
-                        PlayerGameTypeStats.player_id.notin_(exclude_ids),
-                        or_(PlayerGameTypeStats.last_time_played <= filter_time),
+                        PlayerGameTypeStats1.game_type == game_type.type,
+                        PlayerGameTypeStats1.player_id.notin_(exclude_ids),
+                        or_(PlayerGameTypeStats1.last_time_played <= filter_time),
                     ).order_by(
                         func.rand()
                     ).limit(player_count - len(player_party)).all()
                 
                 current_time, playtime = simulate_game_time(current_time, game_type)
                 
-                game = Game(
+                game = Game1(
                     created_at=current_time,
                     type=game_type.type,
                     playtime=playtime,
@@ -841,12 +841,12 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     inflated_ts_volatility = math.sqrt(ref_player.ts_volatility**2 + (idle_days * env.tau)**2)
 
                     game_players_to_insert.append(
-                        GamePlayer(
+                        GamePlayer1(
                             created_at=current_time,
-                            game=game,
+                            game1=game,
                             player_id=ref_player.player_id,
                             team="Team_1",
-                            party_name=ref_player.player.party_name,
+                            party_name=ref_player.player1.party_name,
                             true_rating_before_game=ref_player.true_rating,
                             elo_before=ref_player.elo_rating,
                             glicko_rating_before=ref_player.glicko_rating,
@@ -883,12 +883,12 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         inflated_ts_volatility = math.sqrt(team_player.ts_volatility**2 + (idle_days * env.tau)**2)
 
                         game_players_to_insert.append(
-                            GamePlayer(
+                            GamePlayer1(
                                 created_at=current_time,
-                                game=game,
+                                game1=game,
                                 player_id=team_player.player_id,
                                 team=team_name,
-                                party_name=team_player.player.party_name,
+                                party_name=team_player.player1.party_name,
                                 true_rating_before_game=team_player.true_rating,
                                 elo_before=team_player.elo_rating,
                                 glicko_rating_before=team_player.glicko_rating,
@@ -1012,7 +1012,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
 
                 if game_type.type == "FFA":
                     most_kills_player = max(game_players_to_insert, key=lambda player: player.kills)
-                    most_kill_player_count = sum(1 for p in game_players_to_insert)
+                    most_kill_player_count = sum(1 for _ in game_players_to_insert)
 
                     game_kill_cap = game_type.kill_cap * 0.8 if most_kill_player_count > 1 else game_type.kill_cap
 
@@ -1378,14 +1378,14 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     is_mvp = bool(game_player.player_id == current_mvp[0])
                     is_lvp = bool(game_player.player_id == current_lvp[0])
                     player_stats = get_stat_parameters(game_type, game_player.true_rating_before_game)
-                    game_player_game_type_stats = session.query(PlayerGameTypeStats).filter(
-                        PlayerGameTypeStats.player_id == game_player.player_id,
+                    game_player_game_type_stats = session.query(PlayerGameTypeStats1).filter(
+                        PlayerGameTypeStats1.player_id == game_player.player_id,
                     ).first()
                     player_stats_calculated = compute_remaining_game_player_stats(game_player, playtime, is_mvp, is_lvp)
 
-                    new_game_player = GamePlayer(
+                    new_game_player = GamePlayer1(
                         created_at=current_time,
-                        game=game,
+                        game1=game,
                         player_id=game_player.player_id,
                         team=game_player.team,
                         party_name=game_player.party_name,
@@ -1414,7 +1414,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                 
                 # Update player stats for all game players inserted:
                 for game_player in game_players_to_insert:
-                    p_stats = session.query(PlayerGameTypeStats).filter_by(
+                    p_stats = session.query(PlayerGameTypeStats1).filter_by(
                         player_id=game_player.player_id, game_type=game_type.type
                     ).first()
                     update_player_game_type_stats(p_stats, game_player)
@@ -1431,7 +1431,7 @@ def simulate_all_modes() -> None:
     ref_players_ids = list(range(1, REFERENCE_PLAYER_COUNT + 1))
     logger.info("Creating players...")
     
-    created_player_count = session.query(Player).count()
+    created_player_count = session.query(Player1).count()
     if created_player_count < TOTAL_PLAYERS:
         for player_id_index in range(1, TOTAL_PLAYERS + 1):
             party_name = f"Party_{player_id_index}" # default/solo party name
@@ -1439,7 +1439,7 @@ def simulate_all_modes() -> None:
                 if player_id_index in id_range:
                     party_name = name
                     break
-            players_to_create.append(Player(id=player_id_index, name=f"Player_{player_id_index}", party_name=party_name))
+            players_to_create.append(Player1(id=player_id_index, name=f"Player_{player_id_index}", party_name=party_name))
     
         session.add_all(players_to_create)
         session.commit()

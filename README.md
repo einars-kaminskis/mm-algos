@@ -101,15 +101,52 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
        LIMIT 2000" \
   | tr '\t' ';' > player_ratings.csv
   ```
-  For windows use:
   ```
-  docker exec -i c523537548a6 mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT REPLACE(true_rating_after_game,'.',','), REPLACE(elo_after,'.',','), REPLACE(glicko_rating_after,'.',','), REPLACE(ts_rating_after,'.',',') FROM game_players WHERE player_id = 1 ORDER BY id LIMIT 2000" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
+  docker exec -i 67aca937e448 \
+  mysql -uuser -ppassword --batch --silent -D matchmaking_db \
+  -e "SELECT
+         REPLACE(true_rating_after_game,'.',','),
+         REPLACE(elo_after,'.',','),
+         REPLACE(glicko_rating_after,'.',','),
+         REPLACE(ts_rating_after,'.',',')
+       FROM game_players6
+       WHERE player_id = 1
+       ORDER BY id
+       LIMIT 500" \
+  | tr '\t' ';' > player_ratings.csv
+  ```
+
+  docker exec -i 67aca937e448 \
+  mysql -uuser -ppassword --batch --silent -D matchmaking_db \
+  -e "SELECT
+         REPLACE(true_rating_before_game,'.',','),
+         REPLACE(true_rating_after_game,'.',',')
+       FROM game_players4
+       WHERE player_id = 1
+       ORDER BY id
+       LIMIT 500" \
+  | tr '\t' ';' > player_ratings.csv
+
+  docker exec -i 67aca937e448 \
+  mysql -uuser -ppassword --batch --silent -D matchmaking_db \
+  -e "SELECT * FROM game_players4 ORDER BY game_id" > player_ratings.csv
+
+  docker exec -it 67aca937e448 mysql -uuser -ppassword -D matchmaking_db
+
+  For ``Windows`` use:
+  ```
+  docker exec -i 67aca937e448 mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT REPLACE(true_rating_after_game,'.',','), REPLACE(elo_after,'.',','), REPLACE(glicko_rating_after,'.',','), REPLACE(ts_rating_after,'.',',') FROM game_players WHERE player_id = 1 ORDER BY id LIMIT 2000" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
   ```
   This essentially lets you export 2000 game_players rows with the ratings from the image to the player_ratings.csv file for easy importing in an excel. If you want to do the same thing inside the docker image database, unfortunately you need to set certain permissions for the database user in order to export data onto files on your system otherwise you will be forbidden to do so. This is much simpler and doesn't require the hastle of giving permissions and messing something up.
 
-  To get the distribution of players across the whole playerbase, use this:
+  To get the distribution of players across the whole playerbase use this command from the ``bash`` or ``zsh`` terminal:
   ```
-  docker exec -i ccc3866ee28e mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT id, true_rating FROM player_game_type_stats WHERE game_type = 'TDM' ORDER BY id" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
+  docker exec -i 67aca937e448 mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT id, true_rating FROM player_game_type_stats1 WHERE game_type = 'TDM' ORDER BY id" | tr '\t' ';' > player_ratings.csv
+  ```
+
+  For ``Windows`` use:
+  ```
+  docker exec -i 67aca937e448 mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT id, true_rating FROM player_game_type_stats WHERE game_type = 'TDM' ORDER BY id" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
   ```
 
 ### Some useful SQL select queries I used:
