@@ -79,13 +79,11 @@ class GamePlayer6(Base):
     elo_before = Column(Float, nullable=False)
     elo_after = Column(Float, default=0.0)
 
-    # Glicko‑2 rating
+    # Glicko rating
     glicko_rating_before = Column(Float, nullable=False)
     glicko_rd_before = Column(Float, nullable=False)
-    glicko_volatility_before = Column(Float, nullable=False)
     glicko_rating_after = Column(Float, default=0.0)
     glicko_rd_after = Column(Float, default=GLICKO_MAX_RD)
-    glicko_volatility_after = Column(Float, default=0.06)
 
     # TrueSkill rating
     ts_rating_before = Column(Float, nullable=False)
@@ -183,10 +181,9 @@ class PlayerGameTypeStats6(Base):
     # Elo rating
     elo_rating = Column(Float, default=0.0)
 
-    # Glicko‑2 rating
+    # Glicko rating
     glicko_rating = Column(Float, default=0.0)
     glicko_rd = Column(Float, default=GLICKO_MAX_RD)
-    glicko_volatility = Column(Float, default=0.06)
 
     # TrueSkill rating
     ts_rating = Column(Float, default=0.0)

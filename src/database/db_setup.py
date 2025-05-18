@@ -7,7 +7,7 @@ load_dotenv()  # This will load variables from .env file in the project root dir
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL, echo=True)  # echo=True for debugging
+engine = create_engine(DATABASE_URL, echo=False)  # echo=True for debugging
 
 SessionLocal = sessionmaker(bind=engine)
 

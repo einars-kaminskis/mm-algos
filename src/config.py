@@ -1,11 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from elote import EloCompetitor, Glicko2Competitor
-
-# Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
-class ZeroFloorElo(EloCompetitor):
-    _minimum_rating = 0
-class ZeroFloorGlicko2(Glicko2Competitor):
-    _minimum_rating = 0
+from elote import EloCompetitor, GlickoCompetitor
 
 class GameMode:
     def __init__(
@@ -508,7 +502,7 @@ GAME_TYPES = [
             "deaths": 0.10,
             "assists": 0.80,
             "damage_dealt": 0.90,
-            "damage_taken": 0.80,
+            "damage_taken": 0.30,
             "damage_missed": 0.20,
             "headshot_damage_dealt": 0.80,
             "torso_damage_dealt": 0.60,
@@ -524,9 +518,9 @@ GAME_TYPES = [
             "deaths_per_minute": 0.00,
             "assists_per_minute": 0.40,
             "damage_dealt_per_minute": 0.50,
-            "damage_taken_per_minute": 0.40,
+            "damage_taken_per_minute": 0.20,
             "kill_death_ratio": 0.00,
-            "damage_dealt_and_taken_ratio": 0.45,
+            "damage_dealt_and_taken_ratio": 0.35,
             "killstreak": 0.90,
             "win_streak": 1.00,
             "win_loss_ratio": 1.00,
@@ -664,7 +658,6 @@ GAME_TYPES = [
         time_limit_mean = 1920, # seconds or 32 minutes
         time_limit_variance = 240, # seconds or 4 minutes
         winning_round_limit = 16, # for each team to win
-        kill_cap = 109, # Average between 83 kills and 136 kills
         base_performance = 20.00,
         vp_weights = {
           'kills': 0.88,
@@ -674,8 +667,8 @@ GAME_TYPES = [
           'contesting_kills': 0.00,
           'objective_time': 0.00,
           'accuracy': 0.89,
-          'damage_dealt': 0.30,
-          'damage_taken': 0.28,
+          'damage_dealt': 0.50,
+          'damage_taken': 0.48,
         },
         group_sizes = [2, 5],
         adjustments = {
@@ -755,9 +748,9 @@ GAME_TYPES = [
         rank_delta_weights = {
             "kills": 0.95,
             "deaths": 0.95,
-            "assists": 0.45,
-            "damage_dealt": 0.30,
-            "damage_taken": 0.30,
+            "assists": 0.55,
+            "damage_dealt": 0.50,
+            "damage_taken": 0.50,
             "damage_missed": 0.60,
             "headshot_damage_dealt": 0.85,
             "torso_damage_dealt": 0.60,
@@ -771,11 +764,11 @@ GAME_TYPES = [
             "longest_time_alive": 1.00,
             "kills_per_minute": 0.75,
             "deaths_per_minute": 0.75,
-            "assists_per_minute": 0.35,
-            "damage_dealt_per_minute": 0.20,
-            "damage_taken_per_minute": 0.20,
+            "assists_per_minute": 0.45,
+            "damage_dealt_per_minute": 0.40,
+            "damage_taken_per_minute": 0.40,
             "kill_death_ratio": 0.85,
-            "damage_dealt_and_taken_ratio": 0.30,
+            "damage_dealt_and_taken_ratio": 0.50,
             "killstreak": 0.90,
             "win_streak":1.00,
             "win_loss_ratio": 1.00,
@@ -921,7 +914,7 @@ RANK_DISTRIBUTION_WEIGHTS = [
     2.7027, 2.7027, 2.7027, 2.7027, 2.7027
 ]
 
-TOTAL_PLAYERS = 50000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
+TOTAL_PLAYERS = 2000 # took 2 minutes to build 5000 players (40000 would technically be 16 minutes) For testing (TODO: CHANGE TO 40_000)
 
 DISTRIBUTION = int(TOTAL_PLAYERS / 24)
 
@@ -936,16 +929,7 @@ SCENARIO_PLAYER_PARTIES = [
     (range(32, 35), "huge_fall_then_jump_half"),
     (range(35, 41), "huge_fall_then_jump_full")
 ]
-# For testing (TODO: DELETE)
-# SCENARIO_PLAYER_PARTIES = [
-#     (range(5, 11), "linear_increase_decrease_full"),
-#     (range(11, 17), "increase_then_constant_full"),
-#     (range(17, 23), "skill_gap_full"),
-#     (range(23, 29), "huge_fall_then_jump_full")
-# ]
 
-
-# TESTED_RATING_COEFS = [0.85, 0.89, 0.91, 1.0, 1.3] (TODO: DELETE)
 """
 Scenarios:
 - linear increse in rank over 5000 games and then a linear decrease in 5000 games;
@@ -978,22 +962,16 @@ Scenarios:
 #     "player_35": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
 # }
 
-# Testing REF_COEF_AND_GAMES (TODO: DELETE)
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
-    "player_2": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
-    "player_3": [(1.4, 100, 1.0, 0), (0.91, 100, 1.0, 0), (0.91, 100, 1.0, 365)],
-    "player_4": [(1.4, 100, 1.0, 0), (0.01, 100, 1.0, 0), (1.8, 100, 1.0, 0)],
+    "player_1": [(1.5, 1, 1.0, 40) for _ in range(25)] + [(0.5, 1, 1.0, 40) for _ in range(25)] + [(0.75, 1, 1.0, 40) for _ in range(25)],
+    "player_2": [(1.6, 1, 1.0, 40) for _ in range(19)] + [(0.2, 1, 1.0, 40) for _ in range(19)] + [(1.6, 1, 1.0, 40) for _ in range(19)] + [(0.2, 1, 1.0, 40) for _ in range(19)],
+    "player_3": [(0.75, 1, 1.0, 40) for _ in range(75)],
+    "player_4": [(1.3, 1, 1.0, 40) for _ in range(75)],
 
-    "player_5": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
-    "player_8": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
-    "player_14": [(1.4, 100, 1.0, 0), (0.91, 100, 1.0, 0), (0.91, 100, 1.0, 365)],
-    "player_17": [(1.4, 100, 1.0, 0), (0.01, 100, 1.0, 0), (1.8, 100, 1.0, 0)],
-
-    "player_23": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
-    "player_26": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
-    "player_32": [(1.4, 100, 1.0, 0), (0.91, 100, 1.0, 0), (0.91, 100, 1.0, 365)],
-    "player_35": [(1.4, 100, 1.0, 0), (0.01, 100, 1.0, 0), (1.8, 100, 1.0, 0)],
+    "player_5": [(1.5, 25, 1.0, 0),(0.5, 25, 1.0, 0),(0.75, 25, 1.0, 0)],
+    "player_6": [(1.6, 19, 1.0, 0),(0.2, 19, 1.0, 0),(1.6, 19, 1.0, 0),(0.2, 19, 1.0, 0)],
+    "player_7": [(0.75, 75, 1.0, 0)],
+    "player_8": [(1.3, 75, 1.0, 0)],
 }
 
 # TDM games count = originally 300000, -> 1500 * 12
@@ -1004,7 +982,7 @@ REF_COEF_AND_GAMES = {
 # SAD games count = originally 300000, -> 1500 * 12
 
 REF_INITIAL_TRUE_RATING = 600
-REFERENCE_PLAYER_COUNT = 40 # For testing (TODO: CHANGE TO 40)
+REFERENCE_PLAYER_COUNT = 8
 
 # Time constants
 GLOBAL_START_TIME = datetime.now(timezone.utc) # Global start time for simulation
@@ -1016,10 +994,19 @@ GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 
 # Test algorithm constants
 ELO_K_FACTOR = 20
+GLICKO_C_CONSTANT = 47.97 # sqrt((350^2 - 50^2)/(365/7)) as per Glickman's paper, if period_days is 7 and adjusted to my scenarios, where longest time away can be a year
 GLICKO_MAX_RD = 350.0
 GLICKO_MIN_RD = 50.0
-MAX_RANK = 1300.0
-TS_MAX_SIGMA = MAX_RANK / 6 # 6 standard deviations (3 to each side) should cover all the ranks
-TS_MIN_SIGMA = MAX_RANK / 60
+MAX_RANK = 2000.0
+TS_MAX_SIGMA = MAX_RANK / 8 # 8 standard deviations (3 to each side) should cover all the ranks
+TS_MIN_SIGMA = MAX_RANK / 80
 BASE_BETA = TS_MAX_SIGMA / 2
 BASE_TAU = TS_MAX_SIGMA / 100
+
+# Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
+class ZeroFloorElo(EloCompetitor):
+    _minimum_rating = 0
+class ZeroFloorGlicko(GlickoCompetitor):
+    _c = GLICKO_C_CONSTANT # sqrt((350^2 - 50^2)/t) as per Glickman's paper
+    _rating_period_days = 7.0
+    _minimum_rating = 0

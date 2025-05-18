@@ -66,7 +66,11 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   docker exec -it <container_name_or_id> mysql -u<MYSQL_USER> -p<MYSQL_PASSWORD> -D matchmaking_db
   ```
   Replace ``container_name_or_id`` with the container id you can find with ``docker ps`` command and ``MYSQL_USER`` and ``MYSQL_PASSWORD`` with the ``docker-compose.yml`` environment data, or for the ``root`` user just use ``root`` and ``MYSQL_ROOT_PASSWORD``.
-  
+  Example:
+  ```
+  docker exec -it 4fa32a3bc7ba mysql -uuser -ppassword -D matchmaking_db
+  ```
+
   After connecting to the container, if you don't add `` -D matchmaking_db`` and want to access a different database, then you need to choose the database you want to work with. In our case it is ``matchmaking_db``, so you do this:
   ```
   \u matchmaking_db
@@ -101,8 +105,9 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
        LIMIT 2000" \
   | tr '\t' ';' > player_ratings.csv
   ```
+  Example:
   ```
-  docker exec -i 67aca937e448 \
+  docker exec -i 4fa32a3bc7ba \
   mysql -uuser -ppassword --batch --silent -D matchmaking_db \
   -e "SELECT
          REPLACE(true_rating_after_game,'.',','),
@@ -116,7 +121,20 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
   | tr '\t' ';' > player_ratings.csv
   ```
 
-  docker exec -i 67aca937e448 \
+  For ``Windows`` use:
+  ```
+  docker exec -i 4fa32a3bc7ba mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT REPLACE(true_rating_after_game,'.',','), REPLACE(elo_after,'.',','), REPLACE(glicko_rating_after,'.',','), REPLACE(ts_rating_after,'.',',') FROM game_players1 WHERE player_id = 1 ORDER BY id LIMIT 2000" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
+  ```
+
+  This essentially lets you export 2000 game_players rows with the ratings from the image to the player_ratings.csv file for easy importing in an excel. If you want to do the same thing inside the docker image database, unfortunately you need to set certain permissions for the database user in order to export data onto files on your system otherwise you will be forbidden to do so. This is much simpler and doesn't require the hastle of giving permissions and messing something up.
+
+  For ``Windows`` get before and after rating comparison data for each game:
+  ```
+  docker exec -i 4fa32a3bc7ba mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT REPLACE(true_rating_before_game,'.',','), REPLACE(true_rating_after_game,'.',',') FROM game_players4 WHERE player_id = 1 ORDER BY id LIMIT 500" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
+  ```
+  Same for ``bash`` or ``zsh`` terminal:
+  ```
+  docker exec -i 4fa32a3bc7ba \
   mysql -uuser -ppassword --batch --silent -D matchmaking_db \
   -e "SELECT
          REPLACE(true_rating_before_game,'.',','),
@@ -126,30 +144,31 @@ Bachelor's thesis project for analyzing different matchmaking algorithms with si
        ORDER BY id
        LIMIT 500" \
   | tr '\t' ';' > player_ratings.csv
-
-  docker exec -i 67aca937e448 \
-  mysql -uuser -ppassword --batch --silent -D matchmaking_db \
-  -e "SELECT * FROM game_players4 ORDER BY game_id" > player_ratings.csv
-
-  docker exec -it 67aca937e448 mysql -uuser -ppassword -D matchmaking_db
-
-  For ``Windows`` use:
   ```
-  docker exec -i 67aca937e448 mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT REPLACE(true_rating_after_game,'.',','), REPLACE(elo_after,'.',','), REPLACE(glicko_rating_after,'.',','), REPLACE(ts_rating_after,'.',',') FROM game_players WHERE player_id = 1 ORDER BY id LIMIT 2000" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
-  ```
-  This essentially lets you export 2000 game_players rows with the ratings from the image to the player_ratings.csv file for easy importing in an excel. If you want to do the same thing inside the docker image database, unfortunately you need to set certain permissions for the database user in order to export data onto files on your system otherwise you will be forbidden to do so. This is much simpler and doesn't require the hastle of giving permissions and messing something up.
 
   To get the distribution of players across the whole playerbase use this command from the ``bash`` or ``zsh`` terminal:
   ```
-  docker exec -i 67aca937e448 mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT id, true_rating FROM player_game_type_stats1 WHERE game_type = 'TDM' ORDER BY id" | tr '\t' ';' > player_ratings.csv
+  docker exec -i 4fa32a3bc7ba mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT id, true_rating FROM player_game_type_stats1 WHERE game_type = 'TDM' ORDER BY id" | tr '\t' ';' > player_ratings.csv
   ```
 
   For ``Windows`` use:
   ```
-  docker exec -i 67aca937e448 mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT id, true_rating FROM player_game_type_stats WHERE game_type = 'TDM' ORDER BY id" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
+  docker exec -i 4fa32a3bc7ba mysql -uuser -ppassword --batch --silent -D matchmaking_db -e "SELECT id, true_rating FROM player_game_type_stats WHERE game_type = 'TDM' ORDER BY id" | powershell -Command "$input | ForEach-Object { $_ -replace '\t', ';' }" > player_ratings.csv
   ```
-
 ### Some useful SQL select queries I used:
+- For modifying records:
+  ```
+  delete from game_players4 order by id desc limit 1;
+  ```
+  ```
+  delete from player_game_type_stats5;
+  ```
+  ```
+  delete from players5;
+  ```
+  ```
+  UPDATE player_game_type_stats4 SET last_time_played = DATE_SUB(NOW(), INTERVAL 1 DAY);
+  ```
 - If you choose to enter the MySQL database inside the docker image, then these queries can be used there once the database is selected.
   ```
   SELECT * FROM player_game_type_stats LIMIT 1;

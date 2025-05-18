@@ -1,11 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from elote import EloCompetitor, Glicko2Competitor
-
-# Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
-class ZeroFloorElo(EloCompetitor):
-    _minimum_rating = 0
-class ZeroFloorGlicko2(Glicko2Competitor):
-    _minimum_rating = 0
+from elote import EloCompetitor, GlickoCompetitor
 
 class GameMode:
     def __init__(
@@ -137,7 +131,7 @@ GAME_TYPES = [
             "deaths": 0.10,
             "assists": 0.80,
             "damage_dealt": 0.90,
-            "damage_taken": 0.80,
+            "damage_taken": 0.30,
             "damage_missed": 0.20,
             "headshot_damage_dealt": 0.80,
             "torso_damage_dealt": 0.60,
@@ -153,9 +147,9 @@ GAME_TYPES = [
             "deaths_per_minute": 0.00,
             "assists_per_minute": 0.40,
             "damage_dealt_per_minute": 0.50,
-            "damage_taken_per_minute": 0.40,
+            "damage_taken_per_minute": 0.20,
             "kill_death_ratio": 0.00,
-            "damage_dealt_and_taken_ratio": 0.45,
+            "damage_dealt_and_taken_ratio": 0.35,
             "killstreak": 0.90,
             "win_streak": 1.00,
             "win_loss_ratio": 1.00,
@@ -288,90 +282,40 @@ HALF_MINUTE = timedelta(seconds=30)
 GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 
 # Test algorithm constants
+ELO_K_FACTOR = 20
+GLICKO_C_CONSTANT = 47.97 # sqrt((350^2 - 50^2)/(365/7)) as per Glickman's paper, if period_days is 7 and adjusted to my scenarios, where longest time away can be a year
 GLICKO_MAX_RD = 350.0
 GLICKO_MIN_RD = 50.0
-MAX_RANK = 3000.0
-TS_MAX_SIGMA = MAX_RANK / 6 # 6 standard deviations (3 to each side) should cover all the ranks
-TS_MIN_SIGMA = MAX_RANK / 60
+MAX_RANK = 4000.0
+TS_MAX_SIGMA = MAX_RANK / 8 # 8 standard deviations (3 to each side) should cover all the ranks
+TS_MIN_SIGMA = MAX_RANK / 80
 BASE_BETA = TS_MAX_SIGMA / 2
 BASE_TAU = TS_MAX_SIGMA / 100
 
+# Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
+class ZeroFloorElo(EloCompetitor):
+    _minimum_rating = 0
+class ZeroFloorGlicko(GlickoCompetitor):
+    _c = GLICKO_C_CONSTANT # sqrt((350^2 - 50^2)/t) as per Glickman's paper
+    _rating_period_days = 7.0
+    _minimum_rating = 0
 
+TOTAL_PLAYERS = 100000
 
+DISTRIBUTION = int(TOTAL_PLAYERS / 40)
 
+SCENARIO_PLAYER_PARTIES = []
 
-
-
-
-ELO_K_FACTOR = 20
-
-TOTAL_PLAYERS = 20000
-
-DISTRIBUTION = int(TOTAL_PLAYERS / 30)
-
-SCENARIO_PLAYER_PARTIES = [
-    (range(5, 8), "linear_increase_decrease_half"),
-    (range(8, 14), "linear_increase_decrease_full"),
-    (range(14, 17), "increase_then_constant_half"),
-    (range(17, 23), "increase_then_constant_full"),
-    (range(23, 26), "skill_gap_half"),
-    (range(26, 32), "skill_gap_full"),
-    (range(32, 35), "huge_fall_then_jump_half"),
-    (range(35, 41), "huge_fall_then_jump_full")
-]
-
-"""
-Scenarios:
-- linear increse in rank over 5000 games and then a linear decrease in 5000 games;
-
-- linear increase for the first 2500 games and then a constant unchanging rank for the last 2500 games;
-
-- linear increase for the first 1250 games, then a constant rank for 1250 games,
-  then a couple pauses in played games (last_time_played will be a month to create skill gap),
-  then a constant rank for 2500 games;
-
-- linear increase for the first 1250 games, then a huge fall in rank for 1250 games,
-  then a huge jump in rank for 2500 games;
-"""
-# REF_COEF_AND_GAMES = {
-#     "player_1": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
-#     "player_2": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
-#     "player_3": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
-#     "player_4": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
-
-#     "player_5": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
-#     "player_8": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
-#     "player_14": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
-#     "player_17": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
-
-#     "player_23": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
-#     "player_26": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
-#     "player_32": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
-#     "player_35": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
-# }
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.6, 200, 1.0, 0),(0.8, 200, 1.0, 0)],
-    "player_2": [(1.6, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
-    "player_3": [(1.6, 133, 1.0, 0), (0.91, 133, 1.0, 0)] + [(0.91, 4, 1.0, 30) for _ in range(30)],
-    "player_4": [(1.6, 133, 1.0, 0), (0.2, 133, 1.0, 0), (1.99, 133, 1.0, 0)],
-
-    # "player_5": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
-    # "player_8": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
-    # "player_14": [(1.4, 133, 1.0, 0), (0.91, 133, 1.0, 0), (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30)],
-    # "player_17": [(1.4, 133, 1.0, 0), (0.01, 133, 1.0, 0), (1.8, 133, 1.0, 0)],
-
-    # "player_23": [(1.4, 200, 1.0, 0),(0.20, 200, 1.0, 0)],
-    # "player_26": [(1.4, 200, 1.0, 0), (0.91, 200, 1.0, 0)],
-    # "player_32": [(1.4, 133, 1.0, 0), (0.91, 133, 1.0, 0), (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30),  (0.91, 26, 1.0, 30)],
-    # "player_35": [(1.4, 133, 1.0, 0), (0.01, 133, 1.0, 0), (1.8, 133, 1.0, 0)],
+    "player_1": [(1.5, 500, 1.0, 0),(0.8, 500, 1.0, 0)],
+    "player_2": [(1.5, 500, 1.0, 0), (1.37, 500, 1.0, 0)],
+    "player_3": [(1.5, 330, 1.0, 0), (1.37, 330, 1.0, 0)] + [(1.37, 3, 1.0, 40) for _ in range(110)],
+    "player_4": [(1.5, 330, 1.0, 0), (0.6, 330, 1.0, 0), (1.7, 330, 1.0, 0)],
+    "player_5": [(1.35, 500, 1.0, 0),(0.4, 500, 1.0, 0)],
+    "player_6": [(1.35, 500, 1.0, 0), (0.8, 500, 1.0, 0)],
+    "player_7": [(1.35, 330, 1.0, 0), (0.8, 330, 1.0, 0)] + [(0.8, 3, 1.0, 40) for _ in range(110)],
+    "player_8": [(1.35, 330, 1.0, 0), (0.0001, 330, 1.0, 0), (1.7, 330, 1.0, 0)],
 }
 
-# TDM games count = originally 300000, -> 1500 * 12
-# FFA games count = originally 100000, -> 500 * 12
-# Domination games count = originally 300000, -> 1500 * 12
-# BR_1v99 games count = originally 100000, -> 500 * 12
-# BR_4v96 games count = originally 300000, -> 1500 * 12
-# SAD games count = originally 300000, -> 1500 * 12
-
 REF_INITIAL_TRUE_RATING = 600
-REFERENCE_PLAYER_COUNT = 4
+REFERENCE_PLAYER_COUNT = 8

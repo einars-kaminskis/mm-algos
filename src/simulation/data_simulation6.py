@@ -35,7 +35,7 @@ from ..config6 import (
     DISTRIBUTION,
     # RANK_DISTRIBUTION_WEIGHTS, # Uncomment this, if you want to use distributions
     ZeroFloorElo,
-    ZeroFloorGlicko2,
+    ZeroFloorGlicko,
     roundInt,
     ensure_utc,
     get_stat_parameters
@@ -202,7 +202,6 @@ def compute_remaining_game_player_stats(game_player: GamePlayer6, playtime: int,
     elo_after = 0.0
     glicko_rating_after = 0.0
     glicko_rd_after = GLICKO_MAX_RD
-    glicko_volatility_after = 0.06
 
     return {
         "damage_missed": damage_missed,
@@ -246,7 +245,6 @@ def compute_remaining_game_player_stats(game_player: GamePlayer6, playtime: int,
         "elo_after": elo_after,
         "glicko_rating_after": glicko_rating_after,
         "glicko_rd_after": glicko_rd_after,
-        "glicko_volatility_after": glicko_volatility_after,
     }
 
 def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer6, player_stats: PlayerGameTypeStats6, player_average_stats: dict, team_elo, team_glicko, game_players_to_insert) -> int:
@@ -351,11 +349,11 @@ def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer6, 
     win_deltas["delta_tie"] = game_type.rank_delta_weights["is_tie"] * -0.5 if game_player.is_tie is True else game_type.rank_delta_weights["is_tie"] * 0.5
 
     
-    total_avg_weight = 0.16 * sum(total_avg_deltas.values()) / len(total_avg_deltas)
-    rank_avg_weight = 0.13 * sum(rank_avg_deltas.values()) / len(rank_avg_deltas)
-    other_metric_weight = 0.24 * sum(other_deltas.values()) / len(other_deltas)
-    opponent_weight = 0.37 * opponent_weight
-    win_metric_weight = 0.10 * sum(win_deltas.values()) / len(win_deltas)
+    total_avg_weight = 0.13 * sum(total_avg_deltas.values()) / len(total_avg_deltas)
+    rank_avg_weight = 0.10 * sum(rank_avg_deltas.values()) / len(rank_avg_deltas)
+    other_metric_weight = 0.27 * sum(other_deltas.values()) / len(other_deltas)
+    opponent_weight = 0.43 * opponent_weight
+    win_metric_weight = 0.07 * sum(win_deltas.values()) / len(win_deltas)
 
     performance_weight = total_avg_weight + rank_avg_weight + other_metric_weight + win_metric_weight + opponent_weight
 
@@ -378,15 +376,15 @@ def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer6, 
     final_elo = 0.0
     final_glicko_rating = 0.0
     final_glicko_rd = 0.0
-    final_glicko_volatility = 0.0
     
     for team_index in range(game_type.team_count):
         if game_player.team == f"Team_{team_index + 1}":
             continue
         else:
-            gp_elo_rating = team_elo[game_player.team]['initial_rating']
+            gp_elo_rating = game_player.elo_before
             opp_elo_rating = team_elo[f"Team_{team_index + 1}"]['initial_rating']
-            gp_glicko_rating = team_glicko[game_player.team]['initial_rating']
+            gp_glicko_rating = game_player.glicko_rating_before
+            gp_glicko_rd = game_player.glicko_rd_before
             opp_glicko_rating = team_glicko[f"Team_{team_index + 1}"]['initial_rating']
 
             gp = ZeroFloorElo(initial_rating=gp_elo_rating if gp_elo_rating > 0 else 0, k_factor=team_elo[game_player.team]['k_factor'])
@@ -403,17 +401,15 @@ def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer6, 
 
             final_elo += gp.rating
 
-            gp = ZeroFloorGlicko2(
+            gp = ZeroFloorGlicko(
                 initial_rating=gp_glicko_rating if gp_glicko_rating > 0 else 0,
-                initial_rd=team_glicko[game_player.team]['initial_rd'],
-                initial_time=team_glicko[game_player.team]['initial_time'],
-                initial_volatility=team_glicko[game_player.team]['initial_volatility'],
+                initial_rd=gp_glicko_rd if gp_glicko_rd > GLICKO_MIN_RD else GLICKO_MIN_RD,
+                initial_time=ensure_utc(player_stats.last_time_played),
             )
-            opp = ZeroFloorGlicko2(
+            opp = ZeroFloorGlicko(
                 initial_rating=opp_glicko_rating if opp_glicko_rating > 0 else 0,
                 initial_rd=team_glicko[f"Team_{team_index + 1}"]['initial_rd'],
                 initial_time=team_glicko[f"Team_{team_index + 1}"]['initial_time'],
-                initial_volatility=team_glicko[f"Team_{team_index + 1}"]['initial_volatility'],
             )
 
             if game_player.team_placement < opp_placement:
@@ -425,16 +421,18 @@ def calculate_game_player_rating(game_type: GameMode, game_player: GamePlayer6, 
             
             final_glicko_rating += gp.rating
             final_glicko_rd += gp.rd
-            final_glicko_volatility += gp.volatility
 
     divider = game_type.team_count - 1
     
     final_elo = final_elo / divider if divider != 0 else final_elo
     final_glicko_rating = final_glicko_rating / divider if divider != 0 else final_glicko_rating
     final_glicko_rd = final_glicko_rd / divider if divider != 0 else final_glicko_rd
-    final_glicko_volatility = final_glicko_volatility / divider if divider != 0 else final_glicko_volatility
+    if final_glicko_rd < GLICKO_MIN_RD:
+        final_glicko_rd = GLICKO_MIN_RD
+    elif final_glicko_rd > GLICKO_MAX_RD:
+        final_glicko_rd = GLICKO_MAX_RD
     
-    return true_rating_after_game, final_elo, final_glicko_rating, final_glicko_rd, final_glicko_volatility
+    return true_rating_after_game, final_elo, final_glicko_rating, final_glicko_rd
 
 """
 Update aggregated player stats based on the results of a game.
@@ -467,7 +465,6 @@ def update_player_game_type_stats(player_stats: PlayerGameTypeStats6, game_playe
     player_stats.elo_rating = game_player.elo_after
     player_stats.glicko_rating = game_player.glicko_rating_after
     player_stats.glicko_rd = game_player.glicko_rd_after
-    player_stats.glicko_volatility = game_player.glicko_volatility_after
     player_stats.ts_rating = game_player.ts_rating_after
     player_stats.ts_volatility = game_player.ts_volatility_after
 
@@ -616,10 +613,9 @@ def compute_player_game_type_stats(game_type: GameMode, true_rating: float, rank
     avg_damage_dealt_per_minute = total_damage_dealt_per_minute / total_games_played if total_games_played > 0 else 0.0
     avg_damage_taken_per_minute = total_damage_taken_per_minute / total_games_played if total_games_played > 0 else 0.0
 
-    elo_rating = true_rating + 15
-    glicko_rating = true_rating - 15
-    ts_rating = true_rating + 15
-    glicko_volatility = 0.06
+    elo_rating = true_rating
+    glicko_rating = true_rating
+    ts_rating = true_rating
 
     if total_games_played == 0:
         glicko_rd = GLICKO_MAX_RD
@@ -634,7 +630,6 @@ def compute_player_game_type_stats(game_type: GameMode, true_rating: float, rank
         "elo_rating": elo_rating,
         "glicko_rating": glicko_rating,
         "glicko_rd": glicko_rd,
-        "glicko_volatility": glicko_volatility,
         "ts_rating": ts_rating,
         "ts_volatility": ts_volatility,
 
@@ -744,6 +739,9 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
 
     total_games_number = 1
     for ref_player_id in ref_players_ids: # This is how we test each scenario (every player is every scenario in every combination)
+        if ref_player_id != 1:
+            for player_game_type_stat in session.query(PlayerGameTypeStats6).all():
+                player_game_type_stat.last_time_played = GLOBAL_START_TIME
         # Retrieve player's party name and stats
         current_ref_player = session.query(Player6).filter_by(id=ref_player_id).first()
         player_party = [current_ref_player]
@@ -837,7 +835,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     ref_stats = get_stat_parameters(game_type, ref_player.true_rating)
                     ref_stats_calculated = compute_game_player_stats(game_type, ref_stats, playtime)
                     
-                    idle_days = (ensure_utc(current_time) - ensure_utc(ref_player.last_time_played)).days
+                    idle_days = roundInt((ensure_utc(current_time) - ensure_utc(ref_player.last_time_played)).days / 7)
                     inflated_ts_volatility = math.sqrt(ref_player.ts_volatility**2 + (idle_days * env.tau)**2)
 
                     game_players_to_insert.append(
@@ -851,7 +849,6 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                             elo_before=ref_player.elo_rating,
                             glicko_rating_before=ref_player.glicko_rating,
                             glicko_rd_before=ref_player.glicko_rd,
-                            glicko_volatility_before=ref_player.glicko_volatility,
                             ts_rating_before=ref_player.ts_rating,
                             ts_volatility_before=inflated_ts_volatility,
                             **ref_stats_calculated
@@ -879,7 +876,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         team_player_stats = get_stat_parameters(game_type, team_player.true_rating)
                         team_player_stats_calculated = compute_game_player_stats(game_type, team_player_stats, playtime)
 
-                        idle_days = (ensure_utc(current_time) - ensure_utc(team_player.last_time_played)).days
+                        idle_days = roundInt((ensure_utc(current_time) - ensure_utc(team_player.last_time_played)).days / 7)
                         inflated_ts_volatility = math.sqrt(team_player.ts_volatility**2 + (idle_days * env.tau)**2)
 
                         game_players_to_insert.append(
@@ -893,7 +890,6 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                                 elo_before=team_player.elo_rating,
                                 glicko_rating_before=team_player.glicko_rating,
                                 glicko_rd_before=team_player.glicko_rd,
-                                glicko_volatility_before=team_player.glicko_volatility,
                                 ts_rating_before=team_player.ts_rating,
                                 ts_volatility_before=inflated_ts_volatility,
                                 **team_player_stats_calculated
@@ -918,26 +914,25 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     team_glicko[f"Team_{team_index + 1}"] = {
                         "initial_rating": sum(p.glicko_rating_before for p in game_players_to_insert if p.team == f"Team_{team_index + 1}") / game_type.team_size,
                         "initial_rd": sum(p.glicko_rd_before for p in game_players_to_insert if p.team == f"Team_{team_index + 1}") / game_type.team_size,
-                        "initial_volatility": sum(p.glicko_volatility_before for p in game_players_to_insert if p.team == f"Team_{team_index + 1}") / game_type.team_size,
                         "initial_time": datetime.fromtimestamp(total_time, tz=timezone.utc),
                     }
 
                 for game_player in game_players_to_insert:
                     koef = 1.0
-                    if game_player.team != 'Team_1':
-                        koef = 1.0 + ((1.0 - ref_rating_coeficient) / 2)
-                        # koef = 0.95 if ref_rating_coeficient > 1.0 else 1.05
-                    elif game_player.player_id in ref_players_ids:
+                    if ref_rating_coeficient != 1.0: #game_player.team != 'Team_1':
+                        # koef = 1.0 + ((1.0 - ref_rating_coeficient) / 2)
+                        koef = 0.95 if ref_rating_coeficient > 1.0 else 1.05
+                    if game_player.player_id in ref_players_ids:
                         if game_player.player_id != ref_player_id:
                             koef = party_coeficient
                         else:
                             koef = ref_rating_coeficient
 
                     koef_negative = 1.0
-                    if game_player.team != 'Team_1':
-                        koef_negative = 1.0 - ((1.0 - ref_rating_coeficient) / 2)
-                        # koef_negative = 1.05 if ref_rating_coeficient > 1.0 else 0.95
-                    elif game_player.player_id in ref_players_ids:
+                    if ref_rating_coeficient != 1.0: #game_player.team != 'Team_1':
+                        # koef_negative = 1.0 - ((1.0 - ref_rating_coeficient) / 2)
+                        koef_negative = 1.05 if ref_rating_coeficient > 1.0 else 0.95
+                    if game_player.player_id in ref_players_ids:
                         if game_player.player_id != ref_player_id:
                             koef_negative = 1.0 + (1.0 - party_coeficient)
                         else:
@@ -1212,7 +1207,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                                 player.is_tie = False
 
                     if game_type.type == 'SAD':
-                        kill_cap = max(random.gauss(game_type.kill_cap, 6), game_type.kill_cap - 15)
+                        kill_cap = random.randrange(83, 136 + 1, 1) # Average between 83 kills and 136 kills
                         kills_koeficient = kill_cap / team1_kills if team1_kills >= team2_kills else kill_cap / team2_kills
 
                         for player in game_players_to_insert:
@@ -1237,11 +1232,21 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                             player_deaths_koeficient = (team2_new_kills * weight / team2_weight_sum) / player.deaths if player.deaths else 1
                             player.deaths = roundInt(player.deaths * player_deaths_koeficient)
                             player.damage_taken = roundInt(player.damage_taken * player_deaths_koeficient)
+                            average_time_alive = playtime / player.deaths if player.deaths else playtime
+                            if average_time_alive < player.longest_time_alive * kills_koeficient:
+                                player.longest_time_alive = random.randrange(roundInt(average_time_alive), roundInt(player.longest_time_alive * kills_koeficient) + 1, 1)
+                            else:
+                                player.longest_time_alive = roundInt(player.longest_time_alive * kills_koeficient)
                             
                         for player, weight in zip(team2_sorted, team1_death_weights):
                             player_deaths_koeficient = (team1_new_kills * weight / team1_weight_sum) / player.deaths if player.deaths else 1
                             player.deaths = roundInt(player.deaths * player_deaths_koeficient)
                             player.damage_taken = roundInt(player.damage_taken * player_deaths_koeficient)
+                            average_time_alive = playtime / player.deaths if player.deaths else playtime
+                            if average_time_alive < player.longest_time_alive * kills_koeficient:
+                                player.longest_time_alive = random.randrange(roundInt(average_time_alive), roundInt(player.longest_time_alive * kills_koeficient) + 1, 1)
+                            else:
+                                player.longest_time_alive = roundInt(player.longest_time_alive * kills_koeficient)
 
                         team1_new_deaths = sum(p.deaths for p in game_players_to_insert if p.team == "Team_1")
                         team2_new_deaths = sum(p.deaths for p in game_players_to_insert if p.team == "Team_2")
@@ -1257,11 +1262,6 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         for player in game_players_to_insert:
                             player.rounds_won = team1_rounds_won if player.team == "Team_1" else team2_rounds_won
                             player.rounds_lost = 30 - player.rounds_won
-                            average_time_alive = playtime / player.deaths if player.deaths else playtime
-                            if average_time_alive < player.longest_time_alive * kills_koeficient:
-                                player.longest_time_alive = random.randrange(roundInt(average_time_alive), roundInt(player.longest_time_alive * kills_koeficient) + 1, 1)
-                            else:
-                                player.longest_time_alive = roundInt(player.longest_time_alive * kills_koeficient)
                             
                             if winning_team == 'Tie':
                                 player.team_placement = 1
@@ -1393,7 +1393,6 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         elo_before=game_player.elo_before,
                         glicko_rating_before=game_player.glicko_rating_before,
                         glicko_rd_before=game_player.glicko_rd_before,
-                        glicko_volatility_before=game_player.glicko_volatility_before,
                         ts_rating_before=game_player.ts_rating_before,
                         ts_volatility_before=game_player.ts_volatility_before,
                         ts_rating_after=game_player.ts_rating_after,
@@ -1401,7 +1400,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         **player_stats_calculated
                     )
 
-                    new_game_player.true_rating_after_game, new_game_player.elo_after, new_game_player.glicko_rating_after, new_game_player.glicko_rd_after, new_game_player.glicko_volatility_after = calculate_game_player_rating(game_type, new_game_player, game_player_game_type_stats, player_stats, team_elo, team_glicko, game_players_to_insert)
+                    new_game_player.true_rating_after_game, new_game_player.elo_after, new_game_player.glicko_rating_after, new_game_player.glicko_rd_after = calculate_game_player_rating(game_type, new_game_player, game_player_game_type_stats, player_stats, team_elo, team_glicko, game_players_to_insert)
 
                     new_game_players_to_insert.append(new_game_player)
                 
