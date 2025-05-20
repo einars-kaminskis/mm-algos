@@ -19,7 +19,6 @@ from ..config1 import (
     STAT_ATTRS,
     GAME_TYPES,
     HALF_MINUTE,
-    ELO_K_FACTOR,
     TS_MIN_SIGMA,
     TS_MAX_SIGMA,
     GLICKO_MIN_RD,
@@ -621,8 +620,8 @@ def compute_player_game_type_stats(game_type: GameMode, true_rating: float, rank
         glicko_rd = GLICKO_MAX_RD
         ts_volatility = TS_MAX_SIGMA
     else:
-        glicko_rd = max(GLICKO_MIN_RD,  GLICKO_MAX_RD / math.sqrt(total_games_played + 1))
-        ts_volatility = max(TS_MIN_SIGMA, TS_MAX_SIGMA / math.sqrt(total_games_played + 1))
+        glicko_rd = GLICKO_MIN_RD
+        ts_volatility = TS_MIN_SIGMA
         
 
     return {
@@ -772,7 +771,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
         current_time = GLOBAL_START_TIME
         game_number = 1
 
-        for (ref_rating_coeficient, ref_games_count, party_coeficient, time_gap) in REF_COEF_AND_GAMES[f"player_{ref_player_id}"]:
+        for (ref_rating_coeficient, ref_games_count, party_coeficient, time_gap, k_factor) in REF_COEF_AND_GAMES[f"player_{ref_player_id}"]:
             gap_added = False
             for _ in range(ref_games_count):
                 game_players_to_insert = []
@@ -835,8 +834,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     ref_stats = get_stat_parameters(game_type, ref_player.true_rating)
                     ref_stats_calculated = compute_game_player_stats(game_type, ref_stats, playtime)
                     
-                    idle_days = roundInt((ensure_utc(current_time) - ensure_utc(ref_player.last_time_played)).days / 7)
-                    inflated_ts_volatility = math.sqrt(ref_player.ts_volatility**2 + (idle_days * env.tau)**2)
+                    idle_days = roundInt((ensure_utc(current_time) - ensure_utc(ref_player.last_time_played)).days)
+                    inflated_ts_volatility = math.sqrt(ref_player.ts_volatility**2 + (idle_days * env.tau**2))
 
                     game_players_to_insert.append(
                         GamePlayer1(
@@ -876,8 +875,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         team_player_stats = get_stat_parameters(game_type, team_player.true_rating)
                         team_player_stats_calculated = compute_game_player_stats(game_type, team_player_stats, playtime)
 
-                        idle_days = roundInt((ensure_utc(current_time) - ensure_utc(team_player.last_time_played)).days / 7)
-                        inflated_ts_volatility = math.sqrt(team_player.ts_volatility**2 + (idle_days * env.tau)**2)
+                        idle_days = roundInt((ensure_utc(current_time) - ensure_utc(team_player.last_time_played)).days)
+                        inflated_ts_volatility = math.sqrt(team_player.ts_volatility**2 + (idle_days * env.tau**2))
 
                         game_players_to_insert.append(
                             GamePlayer1(
@@ -906,7 +905,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     
                     team_elo[f"Team_{team_index + 1}"] = {
                         "initial_rating": sum(p.elo_before for p in game_players_to_insert if p.team == f"Team_{team_index + 1}") / game_type.team_size,
-                        "k_factor": ELO_K_FACTOR,
+                        "k_factor": k_factor,
                     }
 
                     total_time = sum(ensure_utc(p.last_time_played).timestamp() for p, gp in zip(players_stats, game_players_to_insert) if gp.team == f"Team_{team_index + 1}") / game_type.team_size
@@ -1168,7 +1167,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         for player in game_players_to_insert:
                             old_objective_time = player.objective_time
                             player.objective_time = min(max(player.objective_time + 15 * player.kills - 20 * player.deaths, 10), roundInt(0.8 * playtime))
-                            objective_time_ratio = player.objective_time / old_objective_time
+                            objective_time_ratio = player.objective_time / old_objective_time if old_objective_time else 1
 
                             player.contesting_kills = roundInt(player.kills * (min(0.5 * objective_time_ratio, 0.9)))
 
@@ -1422,7 +1421,7 @@ Main simulation function to create players, initialize stats, and simulate games
 """
 def simulate_all_modes() -> None:
     players_to_create = []
-    ref_players_ids = list(range(1, REFERENCE_PLAYER_COUNT + 1))
+    ref_players_ids = list(range(5, REFERENCE_PLAYER_COUNT + 1))
     logger.info("Creating players...")
     
     created_player_count = session.query(Player1).count()
@@ -1452,9 +1451,12 @@ def simulate_all_modes() -> None:
         else:
             draw_probability = 0.01
         env = trueskill.TrueSkill(
-            mu=0.0, sigma=TS_MAX_SIGMA,
-            beta=BASE_BETA, tau=BASE_TAU,
-            draw_probability=draw_probability)
+          mu = 0.0,
+          sigma = TS_MAX_SIGMA,
+          beta = BASE_BETA, 
+          tau = BASE_TAU,
+          draw_probability = draw_probability
+        )
         logger.info(f"Starting simulation for game type: {game_type.type}")
         simulate_game_mode_games(game_type, ref_players_ids, env)
         logger.info(f"Completed simulation for game type: {game_type.type}")

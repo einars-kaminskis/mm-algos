@@ -283,39 +283,46 @@ HALF_MINUTE = timedelta(seconds=30)
 GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 
 # Test algorithm constants
+TOTAL_PLAYERS = 10000
+DISTRIBUTION_COUNT = 30
+DISTRIBUTION = int(TOTAL_PLAYERS / DISTRIBUTION_COUNT)
+
 ELO_K_FACTOR = 20
-GLICKO_C_CONSTANT = 47.97 # sqrt((350^2 - 50^2)/(365/7)) as per Glickman's paper, if period_days is 7 and adjusted to my scenarios, where longest time away can be a year
 GLICKO_MAX_RD = 350.0
-GLICKO_MIN_RD = 50.0
-MAX_RANK = 4000.0
-TS_MAX_SIGMA = MAX_RANK / 8 # 8 standard deviations (3 to each side) should cover all the ranks
-TS_MIN_SIGMA = MAX_RANK / 80
-BASE_BETA = TS_MAX_SIGMA / 2
-BASE_TAU = TS_MAX_SIGMA / 100
+GLICKO_MIN_RD = 30.0
+MAX_RANK = DISTRIBUTION_COUNT * 100 / 2
+TS_MAX_SIGMA = MAX_RANK / 6 # Cover 3 standard deviations worth of the rating in both directions.
+TS_MIN_SIGMA = MAX_RANK / 60 # 10 times lower deviation for certain games
+BASE_BETA = TS_MAX_SIGMA / 2 # As per trueskill package initial values
+BASE_TAU = TS_MAX_SIGMA / 100 # As per trueskill package initial values
 
 # Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
 class ZeroFloorElo(EloCompetitor):
     _minimum_rating = 0
 class ZeroFloorGlicko(GlickoCompetitor):
-    _c = GLICKO_C_CONSTANT # sqrt((350^2 - 50^2)/t) as per Glickman's paper
-    _rating_period_days = 7.0
     _minimum_rating = 0
-
-TOTAL_PLAYERS = 100000
-
-DISTRIBUTION = int(TOTAL_PLAYERS / 40)
 
 SCENARIO_PLAYER_PARTIES = []
 
+# "player_number": [(ref_skill_coeficient, ref_games_count, party_coeficient, time_gap, k_factor), ...]
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.3, 500, 1.0, 0),(0.5, 500, 1.0, 0)],
-    "player_2": [(1.3, 500, 1.0, 0), (0.9, 500, 1.0, 0)],
-    "player_3": [(1.3, 330, 1.0, 0), (0.9, 330, 1.0, 0)] + [(0.9, 3, 1.0, 40) for _ in range(110)],
-    "player_4": [(1.3, 330, 1.0, 0), (0.001, 330, 1.0, 0), (1.7, 330, 1.0, 0)],
-    "player_5": [(1.3, 500, 1.0, 0),(0.5, 500, 1.0, 0)],
-    "player_6": [(1.3, 500, 1.0, 0), (0.9, 500, 1.0, 0)],
-    "player_7": [(1.3, 330, 1.0, 0), (0.9, 330, 1.0, 0)] + [(0.9, 3, 1.0, 40) for _ in range(110)],
-    "player_8": [(1.3, 330, 1.0, 0), (0.001, 330, 1.0, 0), (1.7, 330, 1.0, 0)],
+    "player_1": [(1.4, 400, 1.0, 0, ELO_K_FACTOR),(0.105, 400, 1.0, 0, ELO_K_FACTOR)], # 1.4, 0.105
+    "player_2": [(0.82, 800, 1.0, 0, ELO_K_FACTOR)], # 0.79, 0.80
+    "player_3": [(0.83, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)], # 0.81, 0.72
+    "player_4": [(0.83, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)], # 0.81
+    "player_5": [
+        (1.5, 100, 1.0, 0, ELO_K_FACTOR),  # 1.3, 1.5
+        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.5, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.5, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.5, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+    ],
+    "player_6": [(1.3, 300, 1.0, 0, ELO_K_FACTOR), (0.93, 500, 1.0, 0, ELO_K_FACTOR)], # 1.3,     0.90, 0.86
+    "player_7": [(1.3, 300, 1.0, 0, 32), (0.93, 500, 1.0, 0, 32)], # 1.3,     0.90, 0.86
+    "player_8": [(1.3, 300, 1.0, 0, 10), (0.93, 500, 1.0, 0, 10)], # 1.3,     0.90, 0.86
 }
 
 REF_INITIAL_TRUE_RATING = 600

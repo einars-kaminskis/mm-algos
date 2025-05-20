@@ -920,15 +920,46 @@ DISTRIBUTION = int(TOTAL_PLAYERS / 24)
 
 # Half and full team players with corresponding party names for each scenario
 SCENARIO_PLAYER_PARTIES = [
-    (range(5, 8), "linear_increase_decrease_half"),
-    (range(8, 14), "linear_increase_decrease_full"),
-    (range(14, 17), "increase_then_constant_half"),
-    (range(17, 23), "increase_then_constant_full"),
-    (range(23, 26), "skill_gap_half"),
-    (range(26, 32), "skill_gap_full"),
-    (range(32, 35), "huge_fall_then_jump_half"),
-    (range(35, 41), "huge_fall_then_jump_full")
+    # (range(5, 8), "linear_increase_decrease_half"),
+    # (range(8, 14), "linear_increase_decrease_full"),
+    # (range(14, 17), "increase_then_constant_half"),
+    # (range(17, 23), "increase_then_constant_full"),
+    # (range(23, 26), "skill_gap_half"),
+    # (range(26, 32), "skill_gap_full"),
+    # (range(32, 35), "huge_fall_then_jump_half"),
+    # (range(35, 41), "huge_fall_then_jump_full")
 ]
+
+REF_INITIAL_TRUE_RATING = 600
+REFERENCE_PLAYER_COUNT = 8
+
+# Time constants
+GLOBAL_START_TIME = datetime.now(timezone.utc) # Global start time for simulation
+
+ONE_WEEK = timedelta(weeks=1)
+ONE_YEAR = timedelta(days=365)
+HALF_MINUTE = timedelta(seconds=30)
+GAME_GAP = timedelta(minutes=2) # Fixed gap between games
+
+# Test algorithm constants
+TOTAL_PLAYERS = 100000
+DISTRIBUTION_COUNT = 40
+DISTRIBUTION = int(TOTAL_PLAYERS / DISTRIBUTION_COUNT)
+
+ELO_K_FACTOR = 20
+GLICKO_MAX_RD = 350.0
+GLICKO_MIN_RD = 30.0
+MAX_RANK = DISTRIBUTION_COUNT * 100 / 2
+TS_MAX_SIGMA = MAX_RANK / 6 # Cover 3 standard deviations worth of the rating in both directions.
+TS_MIN_SIGMA = MAX_RANK / 60 # 10 times lower deviation for certain games
+BASE_BETA = TS_MAX_SIGMA / 2 # As per trueskill package initial values
+BASE_TAU = TS_MAX_SIGMA / 100 # As per trueskill package initial values
+
+# Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
+class ZeroFloorElo(EloCompetitor):
+    _minimum_rating = 0
+class ZeroFloorGlicko(GlickoCompetitor):
+    _minimum_rating = 0
 
 """
 Scenarios:
@@ -945,68 +976,41 @@ Scenarios:
 
 - Player is low rank and takes gap and a game, where player is high skill and takes gap.
 """
-# REF_COEF_AND_GAMES = {
-#     "player_1": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
-#     "player_2": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
-#     "player_3": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
-#     "player_4": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
-
-#     "player_5": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
-#     "player_8": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
-#     "player_14": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
-#     "player_17": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
-
-#     "player_23": [(1.3, 1200, 1.0, 0),(0.70, 1200, 1.0, 0)],
-#     "player_26": [(1.3, 600, 1.0, 0), (0.91, 600, 1.0, 0)],
-#     "player_32": [(1.3, 300, 1.0, 0), (0.91, 300, 1.0, 0), (0.91, 600, 1.0, 30)],
-#     "player_35": [(1.3, 300, 1.0, 0), (0.62, 300, 1.0, 0), (1.5, 600, 1.0, 0)],
-# }
-
+# "player_number": [(ref_skill_coeficient, ref_games_count, party_coeficient, time_gap, k_factor), ...]
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.5, 1, 1.0, 40) for _ in range(25)] + [(0.5, 1, 1.0, 40) for _ in range(25)] + [(0.75, 1, 1.0, 40) for _ in range(25)],
-    "player_2": [(1.6, 1, 1.0, 40) for _ in range(19)] + [(0.2, 1, 1.0, 40) for _ in range(19)] + [(1.6, 1, 1.0, 40) for _ in range(19)] + [(0.2, 1, 1.0, 40) for _ in range(19)],
-    "player_3": [(0.75, 1, 1.0, 40) for _ in range(75)],
-    "player_4": [(1.3, 1, 1.0, 40) for _ in range(75)],
-
-    "player_5": [(1.5, 25, 1.0, 0),(0.5, 25, 1.0, 0),(0.75, 25, 1.0, 0)],
-    "player_6": [(1.6, 19, 1.0, 0),(0.2, 19, 1.0, 0),(1.6, 19, 1.0, 0),(0.2, 19, 1.0, 0)],
-    "player_7": [(0.75, 75, 1.0, 0)],
-    "player_8": [(1.3, 75, 1.0, 0)],
+    "player_1": [(1.2, 400, 1.0, 0, ELO_K_FACTOR),(0.3, 400, 1.0, 0, ELO_K_FACTOR)],
+    "player_2": [(0.75, 800, 1.0, 0, ELO_K_FACTOR)],
+    "player_3": [(0.82, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)],
+    "player_4": [(0.82, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)],
+    "player_5": [
+        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+    ],
+    "player_6": [(1.2, 300, 1.0, 0, ELO_K_FACTOR), (0.75, 500, 1.0, 0, ELO_K_FACTOR)],
+    "player_7": [(1.2, 300, 1.0, 0, 32), (0.75, 500, 1.0, 0, 32)],
+    "player_8": [(1.2, 300, 1.0, 0, 10), (0.75, 500, 1.0, 0, 10)],
 }
 
+# REF_COEF_AND_GAMES = {
+#     "player_1": [(1.5, 1, 1.0, 40) for _ in range(25)] + [(0.5, 1, 1.0, 40) for _ in range(25)] + [(0.75, 1, 1.0, 40) for _ in range(25)],
+#     "player_2": [(1.6, 1, 1.0, 40) for _ in range(19)] + [(0.2, 1, 1.0, 40) for _ in range(19)] + [(1.6, 1, 1.0, 40) for _ in range(19)] + [(0.2, 1, 1.0, 40) for _ in range(19)],
+#     "player_3": [(0.75, 1, 1.0, 40) for _ in range(75)],
+#     "player_4": [(1.3, 1, 1.0, 40) for _ in range(75)],
+
+#     "player_5": [(1.5, 25, 1.0, 0),(0.5, 25, 1.0, 0),(0.75, 25, 1.0, 0)],
+#     "player_6": [(1.6, 19, 1.0, 0),(0.2, 19, 1.0, 0),(1.6, 19, 1.0, 0),(0.2, 19, 1.0, 0)],
+#     "player_7": [(0.75, 75, 1.0, 0)],
+#     "player_8": [(1.3, 75, 1.0, 0)],
+# }
 # TDM games count = originally 300000, -> 1500 * 12
 # FFA games count = originally 100000, -> 500 * 12
 # Domination games count = originally 300000, -> 1500 * 12
 # BR_1v99 games count = originally 100000, -> 500 * 12
 # BR_4v96 games count = originally 300000, -> 1500 * 12
 # SAD games count = originally 300000, -> 1500 * 12
-
-REF_INITIAL_TRUE_RATING = 600
-REFERENCE_PLAYER_COUNT = 8
-
-# Time constants
-GLOBAL_START_TIME = datetime.now(timezone.utc) # Global start time for simulation
-
-ONE_WEEK = timedelta(weeks=1)
-ONE_YEAR = timedelta(days=365)
-HALF_MINUTE = timedelta(seconds=30)
-GAME_GAP = timedelta(minutes=2) # Fixed gap between games
-
-# Test algorithm constants
-ELO_K_FACTOR = 20
-GLICKO_C_CONSTANT = 47.97 # sqrt((350^2 - 50^2)/(365/7)) as per Glickman's paper, if period_days is 7 and adjusted to my scenarios, where longest time away can be a year
-GLICKO_MAX_RD = 350.0
-GLICKO_MIN_RD = 50.0
-MAX_RANK = 2000.0
-TS_MAX_SIGMA = MAX_RANK / 8 # 8 standard deviations (3 to each side) should cover all the ranks
-TS_MIN_SIGMA = MAX_RANK / 80
-BASE_BETA = TS_MAX_SIGMA / 2
-BASE_TAU = TS_MAX_SIGMA / 100
-
-# Monkey patch, because the creators of the elote elo and glicko system didn't think that minimum_rating should be changable.
-class ZeroFloorElo(EloCompetitor):
-    _minimum_rating = 0
-class ZeroFloorGlicko(GlickoCompetitor):
-    _c = GLICKO_C_CONSTANT # sqrt((350^2 - 50^2)/t) as per Glickman's paper
-    _rating_period_days = 7.0
-    _minimum_rating = 0
