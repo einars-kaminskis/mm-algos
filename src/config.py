@@ -785,24 +785,26 @@ GAME_TYPES = [
 #   - at rating 3000: uses high skill metrics.
 # --------------------------------------------------------------------
 def interpolate_stat(low_val, med_val, high_val, true_rating: float) -> int | float:
-    if true_rating < 200:
-        slope = abs(med_val - low_val) / 500.0
-        result = low_val - (200 - true_rating) * slope
-    elif true_rating == 200:
-        result = low_val
-    elif true_rating < 1300:
-        t = (true_rating - 200) / 500.0
-        result = low_val + t * abs(med_val - low_val)
-    elif true_rating == 1300:
-        result = med_val
-    elif true_rating < 3000:
-        t = (true_rating - 1300) / 500.0
-        result = med_val + t * abs(high_val - med_val)
-    elif true_rating == 3000:
-        result = high_val
-    elif true_rating > 3000:
-        slope = abs(high_val - med_val) / 500.0
-        result = high_val + (true_rating - 3000) * slope
+    if true_rating <= 200.0:
+        # extrapolate below 200 at slope₁
+        slope = (med_val - low_val) / (1300.0 - 200.0)
+        result = low_val + (true_rating - 200.0) * slope
+
+    elif true_rating <= 1300.0:
+        # interpolate between 200 and 1300
+        slope = (med_val - low_val) / (1300.0 - 200.0)
+        result = low_val + (true_rating - 200.0) * slope
+
+    elif true_rating <= 3000.0:
+        # interpolate between 1300 and 3000
+        slope = (high_val - med_val) / (3000.0 - 1300.0)
+        result = med_val + (true_rating - 1300.0) * slope
+
+    else:
+        # extrapolate above 3000 at slope₂
+        slope = (high_val - med_val) / (3000.0 - 1300.0)
+        result = high_val + (true_rating - 3000.0) * slope
+    
     return max(result, 0)
 
 def interpolate_stats(low_stats: dict, med_stats: dict, high_stats: dict, true_rating: float) -> dict:
@@ -961,21 +963,6 @@ class ZeroFloorElo(EloCompetitor):
 class ZeroFloorGlicko(GlickoCompetitor):
     _minimum_rating = 0
 
-"""
-Scenarios:
-- linear increse in rank over 5000 games and then a linear decrease in 5000 games;
-
-- linear increase for the first 2500 games and then a constant unchanging rank for the last 2500 games;
-
-- linear increase for the first 1250 games, then a constant rank for 1250 games,
-  then a pause in played games (last_time_played will be a month to create skill gap),
-  then a constant rank for 2500 games;
-
-- linear increase for the first 1250 games, then a huge fall in rank for 1250 games,
-  then a huge jump in rank for 2500 games;
-
-- Player is low rank and takes gap and a game, where player is high skill and takes gap.
-"""
 # "player_number": [(ref_skill_coeficient, ref_games_count, party_coeficient, time_gap, k_factor), ...]
 REF_COEF_AND_GAMES = {
     "player_1": [(1.2, 400, 1.0, 0, ELO_K_FACTOR),(0.3, 400, 1.0, 0, ELO_K_FACTOR)],
@@ -996,21 +983,3 @@ REF_COEF_AND_GAMES = {
     "player_7": [(1.2, 300, 1.0, 0, 32), (0.75, 500, 1.0, 0, 32)],
     "player_8": [(1.2, 300, 1.0, 0, 10), (0.75, 500, 1.0, 0, 10)],
 }
-
-# REF_COEF_AND_GAMES = {
-#     "player_1": [(1.5, 1, 1.0, 40) for _ in range(25)] + [(0.5, 1, 1.0, 40) for _ in range(25)] + [(0.75, 1, 1.0, 40) for _ in range(25)],
-#     "player_2": [(1.6, 1, 1.0, 40) for _ in range(19)] + [(0.2, 1, 1.0, 40) for _ in range(19)] + [(1.6, 1, 1.0, 40) for _ in range(19)] + [(0.2, 1, 1.0, 40) for _ in range(19)],
-#     "player_3": [(0.75, 1, 1.0, 40) for _ in range(75)],
-#     "player_4": [(1.3, 1, 1.0, 40) for _ in range(75)],
-
-#     "player_5": [(1.5, 25, 1.0, 0),(0.5, 25, 1.0, 0),(0.75, 25, 1.0, 0)],
-#     "player_6": [(1.6, 19, 1.0, 0),(0.2, 19, 1.0, 0),(1.6, 19, 1.0, 0),(0.2, 19, 1.0, 0)],
-#     "player_7": [(0.75, 75, 1.0, 0)],
-#     "player_8": [(1.3, 75, 1.0, 0)],
-# }
-# TDM games count = originally 300000, -> 1500 * 12
-# FFA games count = originally 100000, -> 500 * 12
-# Domination games count = originally 300000, -> 1500 * 12
-# BR_1v99 games count = originally 100000, -> 500 * 12
-# BR_4v96 games count = originally 300000, -> 1500 * 12
-# SAD games count = originally 300000, -> 1500 * 12

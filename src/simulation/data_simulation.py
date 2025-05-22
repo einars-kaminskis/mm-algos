@@ -1,3 +1,4 @@
+import os
 import math
 import random
 import logging
@@ -6,7 +7,6 @@ from typing import Dict, Any, List, Tuple
 
 import trueskill
 
-from sqlalchemy import func, or_
 from ..database.db_setup import engine, SessionLocal
 from ..database.models import Base, Game, GamePlayer, Player, PlayerGameTypeStats
 from ..config import (
@@ -40,7 +40,9 @@ from ..config import (
     get_stat_parameters
 )
 
-random.seed(42) # Set random seed for reproducing the same randomness in stats and ranks
+seed = os.getenv("SEED") # Set a seed inside .env file to always get the same outcomes for testing purposes.
+if seed is not None:
+    random.seed(int(seed))
 
 # Logging for debugging
 logging.basicConfig(level=logging.INFO)
@@ -777,43 +779,52 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                 game_players_to_insert = []
                 filter_time = current_time + HALF_MINUTE
 
-                player_stats = session.query(PlayerGameTypeStats).filter_by(
-                    player_id=ref_player_id, game_type=game_type.type
-                ).first()
-
-                if not gap_added:
-                    player_stats.last_time_played -= timedelta(days=time_gap)
-                    gap_added = True
-
                 party_players_stats = session.query(PlayerGameTypeStats).filter(
                     PlayerGameTypeStats.game_type == game_type.type,
                     PlayerGameTypeStats.player_id.in_(player_party_ids),
                 ).all()
 
+                player_stats = next(game_type_stats for game_type_stats in party_players_stats if game_type_stats.player_id == ref_player_id)
+
+                if not player_stats:
+                    raise ValueError(f"Missing stats for player_{ref_player_id}")
+
+                if not gap_added:
+                    player_stats.last_time_played -= timedelta(days=time_gap)
+                    gap_added = True
+
                 search_rating = sum(p.true_rating for p in party_players_stats) / len(party_players_stats)
 
                 exclude_ids = set(ref_players_ids) | set(player_party_ids)
                 
-                game_players_stats = session.query(PlayerGameTypeStats).filter(
+                unsorted_game_players_stats = session.query(PlayerGameTypeStats).filter(
                     PlayerGameTypeStats.true_rating.between(search_rating - 50.0,
                                                               search_rating + 50.0),
                     PlayerGameTypeStats.game_type == game_type.type,
                     PlayerGameTypeStats.player_id.notin_(exclude_ids),
-                    or_(PlayerGameTypeStats.last_time_played <= filter_time),
-                ).order_by(
-                    func.rand()
+                    PlayerGameTypeStats.last_time_played <= filter_time,
                 ).limit(player_count - len(player_party)).all()
 
-                if len(game_players_stats) < (player_count - len(player_party)):
-                    game_players_stats = session.query(PlayerGameTypeStats).filter(
+                if len(unsorted_game_players_stats) < (player_count - len(player_party)):
+                    unsorted_game_players_stats = session.query(PlayerGameTypeStats).filter(
                         PlayerGameTypeStats.true_rating.between(search_rating - 100.0,
                                                                   search_rating + 100.0),
                         PlayerGameTypeStats.game_type == game_type.type,
                         PlayerGameTypeStats.player_id.notin_(exclude_ids),
-                        or_(PlayerGameTypeStats.last_time_played <= filter_time),
-                    ).order_by(
-                        func.rand()
+                        PlayerGameTypeStats.last_time_played <= filter_time,
                     ).limit(player_count - len(player_party)).all()
+
+                if len(unsorted_game_players_stats) < (player_count - len(player_party)):
+                    raise RuntimeError(
+                        f"Ref player #{ref_player_id}.\n"
+                        f"Game mode: {game_type.type}.\n"
+                        f"Total games: {total_games_number}.\n"
+                        f"Game #: {game_number}.\n"
+                        f"Asked for {player_count - len(player_party)} players, but only "
+                        f"{len(unsorted_game_players_stats)} left."
+                    )
+                
+                game_players_stats = random.sample(unsorted_game_players_stats, player_count - len(player_party))
                 
                 current_time, playtime = simulate_game_time(current_time, game_type)
                 
@@ -829,6 +840,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     player_count=player_count,
                 )
                 session.add(game)
+                session.flush()
 
                 for ref_player in party_players_stats:
                     ref_stats = get_stat_parameters(game_type, ref_player.true_rating)
@@ -840,7 +852,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                     game_players_to_insert.append(
                         GamePlayer(
                             created_at=current_time,
-                            game=game,
+                            game_id=game.id,
                             player_id=ref_player.player_id,
                             team="Team_1",
                             party_name=ref_player.player.party_name,
@@ -881,7 +893,7 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         game_players_to_insert.append(
                             GamePlayer(
                                 created_at=current_time,
-                                game=game,
+                                game_id=game.id,
                                 player_id=team_player.player_id,
                                 team=team_name,
                                 party_name=team_player.player.party_name,
@@ -1372,49 +1384,27 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         gp.ts_rating_after    = rating.mu
                         gp.ts_volatility_after = rating.sigma
 
-                new_game_players_to_insert = []
+                game_type_stats_by_player_id = {p.player_id: p for p in party_players_stats + game_players_stats}
+
                 for game_player in game_players_to_insert:
                     is_mvp = bool(game_player.player_id == current_mvp[0])
                     is_lvp = bool(game_player.player_id == current_lvp[0])
                     player_stats = get_stat_parameters(game_type, game_player.true_rating_before_game)
-                    game_player_game_type_stats = session.query(PlayerGameTypeStats).filter(
-                        PlayerGameTypeStats.player_id == game_player.player_id,
-                    ).first()
+                    game_player_game_type_stats = game_type_stats_by_player_id[game_player.player_id]
                     player_stats_calculated = compute_remaining_game_player_stats(game_player, playtime, is_mvp, is_lvp)
 
-                    new_game_player = GamePlayer(
-                        created_at=current_time,
-                        game=game,
-                        player_id=game_player.player_id,
-                        team=game_player.team,
-                        party_name=game_player.party_name,
-                        true_rating_before_game=game_player.true_rating_before_game,
-                        elo_before=game_player.elo_before,
-                        glicko_rating_before=game_player.glicko_rating_before,
-                        glicko_rd_before=game_player.glicko_rd_before,
-                        ts_rating_before=game_player.ts_rating_before,
-                        ts_volatility_before=game_player.ts_volatility_before,
-                        ts_rating_after=game_player.ts_rating_after,
-                        ts_volatility_after=game_player.ts_volatility_after,
-                        **player_stats_calculated
-                    )
+                    for calculated_stat, val in player_stats_calculated.items():
+                        setattr(game_player, calculated_stat, val)
 
-                    new_game_player.true_rating_after_game, new_game_player.elo_after, new_game_player.glicko_rating_after, new_game_player.glicko_rd_after = calculate_game_player_rating(game_type, new_game_player, game_player_game_type_stats, player_stats, team_elo, team_glicko, game_players_to_insert)
-
-                    new_game_players_to_insert.append(new_game_player)
-                
-                game_players_to_insert = new_game_players_to_insert
+                    game_player.true_rating_after_game, game_player.elo_after, game_player.glicko_rating_after, game_player.glicko_rd_after = calculate_game_player_rating(game_type, game_player, game_player_game_type_stats, player_stats, team_elo, team_glicko, game_players_to_insert)
                 
                 logger.info(f"Inserting {len(game_players_to_insert)} game player records for game {game_number} in mode {game_type.type} in bulk...")
                 session.add_all(game_players_to_insert)
-                session.commit()
                 logger.info("Game player records inserted.")
                 
                 # Update player stats for all game players inserted:
                 for game_player in game_players_to_insert:
-                    p_stats = session.query(PlayerGameTypeStats).filter_by(
-                        player_id=game_player.player_id, game_type=game_type.type
-                    ).first()
+                    p_stats = game_type_stats_by_player_id[game_player.player_id] 
                     update_player_game_type_stats(p_stats, game_player)
                 session.commit()
                 logger.info(f"Player stats updated for game {game_number}.")

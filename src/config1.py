@@ -167,24 +167,26 @@ GAME_TYPES = [
 #   - at rating 3000: uses high skill metrics.
 # --------------------------------------------------------------------
 def interpolate_stat(low_val, med_val, high_val, true_rating: float) -> int | float:
-    if true_rating < 200:
-        slope = abs(med_val - low_val) / 500.0
-        result = low_val - (200 - true_rating) * slope
-    elif true_rating == 200:
-        result = low_val
-    elif true_rating < 1300:
-        t = (true_rating - 200) / 500.0
-        result = low_val + t * abs(med_val - low_val)
-    elif true_rating == 1300:
-        result = med_val
-    elif true_rating < 3000:
-        t = (true_rating - 1300) / 500.0
-        result = med_val + t * abs(high_val - med_val)
-    elif true_rating == 3000:
-        result = high_val
-    elif true_rating > 3000:
-        slope = abs(high_val - med_val) / 500.0
-        result = high_val + (true_rating - 3000) * slope
+    if true_rating <= 200.0:
+        # extrapolate below 200 at slope₁
+        slope = (med_val - low_val) / (1300.0 - 200.0)
+        result = low_val + (true_rating - 200.0) * slope
+
+    elif true_rating <= 1300.0:
+        # interpolate between 200 and 1300
+        slope = (med_val - low_val) / (1300.0 - 200.0)
+        result = low_val + (true_rating - 200.0) * slope
+
+    elif true_rating <= 3000.0:
+        # interpolate between 1300 and 3000
+        slope = (high_val - med_val) / (3000.0 - 1300.0)
+        result = med_val + (true_rating - 1300.0) * slope
+
+    else:
+        # extrapolate above 3000 at slope₂
+        slope = (high_val - med_val) / (3000.0 - 1300.0)
+        result = high_val + (true_rating - 3000.0) * slope
+    
     return max(result, 0)
 
 def interpolate_stats(low_stats: dict, med_stats: dict, high_stats: dict, true_rating: float) -> dict:
@@ -327,3 +329,4 @@ REF_COEF_AND_GAMES = {
 
 REF_INITIAL_TRUE_RATING = 600
 REFERENCE_PLAYER_COUNT = 8
+STARTING_PLAYER = 2
