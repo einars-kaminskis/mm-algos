@@ -284,7 +284,7 @@ HALF_MINUTE = timedelta(seconds=30)
 GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 
 # Test algorithm constants
-TOTAL_PLAYERS = 10000
+TOTAL_PLAYERS = 15000
 DISTRIBUTION_COUNT = 30
 DISTRIBUTION = int(TOTAL_PLAYERS / DISTRIBUTION_COUNT)
 
@@ -307,23 +307,23 @@ SCENARIO_PLAYER_PARTIES = []
 
 # "player_number": [(ref_skill_coeficient, ref_games_count, party_coeficient, time_gap, k_factor), ...]
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.35, 400, 1.0, 0, ELO_K_FACTOR),(0.5, 400, 1.0, 0, ELO_K_FACTOR)], # 1.35, 0.5
-    "player_2": [(0.95, 800, 1.0, 0, ELO_K_FACTOR)], # 0.95
-    "player_3": [(1.0, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)], # 1.0
-    "player_4": [(1.0, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)], # 1.0
+    "player_1": [(1.11, 400, 1.0, 0, ELO_K_FACTOR),(0.41, 400, 1.0, 0, ELO_K_FACTOR)],
+    "player_2": [(0.72, 800, 1.0, 0, ELO_K_FACTOR)],
+    "player_3": [(0.72, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)],
+    "player_4": [(0.715, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)],
     "player_5": [
-        (1.7, 100, 1.0, 0, ELO_K_FACTOR), # 1.7
-        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.25, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.03, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.25, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.03, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.25, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.03, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.25, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.03, 100, 1.0, 0, ELO_K_FACTOR),
     ],
-    "player_6": [(1.3, 300, 1.0, 0, ELO_K_FACTOR), (0.9, 500, 1.0, 0, ELO_K_FACTOR)],
-    "player_7": [(1.3, 300, 1.0, 0, 32), (0.9, 500, 1.0, 0, 32)],
-    "player_8": [(1.3, 300, 1.0, 0, 10), (0.9, 500, 1.0, 0, 10)],
+    "player_6": [(0.995, 300, 1.0, 0, ELO_K_FACTOR), (0.94, 500, 1.0, 0, ELO_K_FACTOR)],
+    "player_7": [(0.99, 300, 1.0, 0, 32), (0.94, 500, 1.0, 0, 32)],
+    "player_8": [(0.99, 300, 1.0, 0, 10), (0.94, 500, 1.0, 0, 10)],
 }
 
 REF_INITIAL_TRUE_RATING = 600

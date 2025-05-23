@@ -308,25 +308,25 @@ SCENARIO_PLAYER_PARTIES = []
 
 # "player_number": [(ref_skill_coeficient, ref_games_count, party_coeficient, time_gap, k_factor), ...]
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.7, 400, 1.0, 0, ELO_K_FACTOR),(0.28, 400, 1.0, 0, ELO_K_FACTOR)], # 1.7, 0.28
-    "player_2": [(0.9, 800, 1.0, 0, ELO_K_FACTOR)], # 0.9
-    "player_3": [(0.9, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)], # 0.9
-    "player_4": [(0.8, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)], # 0.8
+    "player_1": [(1.7, 400, 1.0, 0, ELO_K_FACTOR),(0.34, 400, 1.0, 0, ELO_K_FACTOR)],
+    "player_2": [(0.75, 800, 1.0, 0, ELO_K_FACTOR)],
+    "player_3": [(0.7, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)],
+    "player_4": [(0.7, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)],
     "player_5": [
-        (1.7, 100, 1.0, 0, ELO_K_FACTOR), # 1.7
-        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.7, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.001, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.875, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.1, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.875, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.1, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.875, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.1, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.875, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.1, 100, 1.0, 0, ELO_K_FACTOR),
     ],
-    "player_6": [(1.7, 300, 1.0, 0, ELO_K_FACTOR), (0.9, 500, 1.0, 0, ELO_K_FACTOR)],
-    "player_7": [(1.7, 300, 1.0, 0, 32), (0.9, 500, 1.0, 0, 32)],
-    "player_8": [(1.7, 300, 1.0, 0, 10), (0.9, 500, 1.0, 0, 10)],
+    "player_6": [(1.65, 300, 1.0, 0, ELO_K_FACTOR), (0.88, 500, 1.0, 0, ELO_K_FACTOR)],
+    "player_7": [(1.66, 300, 1.0, 0, 32), (0.88, 500, 1.0, 0, 32)],
+    "player_8": [(1.65, 300, 1.0, 0, 10), (0.89, 500, 1.0, 0, 10)],
 }
 
 REF_INITIAL_TRUE_RATING = 600
 REFERENCE_PLAYER_COUNT = 8
-STARTING_PLAYER = 2
+STARTING_PLAYER = 1

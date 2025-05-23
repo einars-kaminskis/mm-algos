@@ -285,7 +285,7 @@ HALF_MINUTE = timedelta(seconds=30)
 GAME_GAP = timedelta(minutes=2) # Fixed gap between games
 
 # Test algorithm constants
-TOTAL_PLAYERS = 10000
+TOTAL_PLAYERS = 25000
 DISTRIBUTION_COUNT = 30
 DISTRIBUTION = int(TOTAL_PLAYERS / DISTRIBUTION_COUNT)
 
@@ -308,25 +308,25 @@ SCENARIO_PLAYER_PARTIES = []
 
 # "player_number": [(ref_skill_coeficient, ref_games_count, party_coeficient, time_gap, k_factor), ...]
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.1, 400, 1.0, 0, ELO_K_FACTOR),(0.1, 400, 1.0, 0, ELO_K_FACTOR)], # 1.1, 0.1
-    "player_2": [(0.87, 800, 1.0, 0, ELO_K_FACTOR)], # 0.87
-    "player_3": [(0.87, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)], # 0.85
-    "player_4": [(0.87, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)], # 0.85
+    "player_1": [(1.02, 400, 1.0, 0, ELO_K_FACTOR),(0.1, 400, 1.0, 0, ELO_K_FACTOR)],
+    "player_2": [(0.83, 800, 1.0, 0, ELO_K_FACTOR)],
+    "player_3": [(0.81, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)],
+    "player_4": [(0.80, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)],
     "player_5": [
-        (1.2, 100, 1.0, 0, ELO_K_FACTOR), # 1.3
+        (1.06, 100, 1.0, 0, ELO_K_FACTOR),
         (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.2, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.06, 100, 1.0, 0, ELO_K_FACTOR),
         (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.2, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.06, 100, 1.0, 0, ELO_K_FACTOR),
         (0.001, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.2, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.06, 100, 1.0, 0, ELO_K_FACTOR),
         (0.001, 100, 1.0, 0, ELO_K_FACTOR),
     ],
-    "player_6": [(1.1, 300, 1.0, 0, ELO_K_FACTOR), (0.82, 500, 1.0, 0, ELO_K_FACTOR)],
-    "player_7": [(1.1, 300, 1.0, 0, 32), (0.82, 500, 1.0, 0, 32)],
-    "player_8": [(1.1, 300, 1.0, 0, 10), (0.82, 500, 1.0, 0, 10)],
+    "player_6": [(0.9975, 300, 1.0, 0, ELO_K_FACTOR), (0.837, 500, 1.0, 0, ELO_K_FACTOR)],
+    "player_7": [(0.9975, 300, 1.0, 0, 32), (0.837, 500, 1.0, 0, 32)],
+    "player_8": [(0.9976, 300, 1.0, 0, 10), (0.837, 500, 1.0, 0, 10)],
 }
 
 REF_INITIAL_TRUE_RATING = 600
 REFERENCE_PLAYER_COUNT = 8
-STARTING_PLAYER = 3
+STARTING_PLAYER = 1

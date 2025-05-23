@@ -1263,8 +1263,8 @@ def simulate_game_mode_games(game_type: GameMode, ref_players_ids: List[int], en
                         team1_new_deaths = sum(p.deaths for p in game_players_to_insert if p.team == "Team_1")
                         team2_new_deaths = sum(p.deaths for p in game_players_to_insert if p.team == "Team_2")
                         all_player_deaths = team1_new_deaths + team2_new_deaths
-                        team1_rounds_won = roundInt(team1_new_deaths / all_player_deaths * 30)
-                        team2_rounds_won = roundInt(team2_new_deaths / all_player_deaths * 30)
+                        team1_rounds_won = roundInt(team2_new_deaths / all_player_deaths * 30)
+                        team2_rounds_won = roundInt(team1_new_deaths / all_player_deaths * 30)
                         winning_team = "Tie"
                         if team1_rounds_won > team2_rounds_won:
                             winning_team = "Team_1"

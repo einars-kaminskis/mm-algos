@@ -308,25 +308,25 @@ SCENARIO_PLAYER_PARTIES = []
 
 # "player_number": [(ref_skill_coeficient, ref_games_count, party_coeficient, time_gap, k_factor), ...]
 REF_COEF_AND_GAMES = {
-    "player_1": [(1.2, 400, 1.0, 0, ELO_K_FACTOR),(0.28, 400, 1.0, 0, ELO_K_FACTOR)], # 1.2, 0.28
-    "player_2": [(0.84, 800, 1.0, 0, ELO_K_FACTOR)], # 0.84
-    "player_3": [(0.81, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)], # 0.81
-    "player_4": [(0.84, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)], # 0.84
+    "player_1": [(1.2, 400, 1.0, 0, ELO_K_FACTOR),(0.28, 400, 1.0, 0, ELO_K_FACTOR)],
+    "player_2": [(0.825, 800, 1.0, 0, ELO_K_FACTOR)],
+    "player_3": [(0.8, 1, 1.0, 14, ELO_K_FACTOR) for _ in range(800)],
+    "player_4": [(0.79, 1, 1.0, 30, ELO_K_FACTOR) for _ in range(800)],
     "player_5": [
-        (1.2, 100, 1.0, 0, ELO_K_FACTOR), # 1.25
-        (0.15, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.2, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.15, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.2, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.15, 100, 1.0, 0, ELO_K_FACTOR),
-        (1.2, 100, 1.0, 0, ELO_K_FACTOR),
-        (0.15, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.57, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.01, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.57, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.01, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.57, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.01, 100, 1.0, 0, ELO_K_FACTOR),
+        (1.57, 100, 1.0, 0, ELO_K_FACTOR),
+        (0.01, 100, 1.0, 0, ELO_K_FACTOR),
     ],
-    "player_6": [(1.15, 300, 1.0, 0, ELO_K_FACTOR), (0.83, 500, 1.0, 0, ELO_K_FACTOR)],
-    "player_7": [(1.15, 300, 1.0, 0, 32), (0.83, 500, 1.0, 0, 32)],
-    "player_8": [(1.15, 300, 1.0, 0, 10), (0.83, 500, 1.0, 0, 10)],
+    "player_6": [(1.118, 300, 1.0, 0, ELO_K_FACTOR), (0.792, 500, 1.0, 0, ELO_K_FACTOR)],
+    "player_7": [(1.15, 300, 1.0, 0, 32), (0.78, 500, 1.0, 0, 32)],
+    "player_8": [(1.161, 300, 1.0, 0, 10), (0.82, 500, 1.0, 0, 10)],
 }
 
 REF_INITIAL_TRUE_RATING = 600
 REFERENCE_PLAYER_COUNT = 8
-STARTING_PLAYER = 2
+STARTING_PLAYER = 1
